@@ -20,13 +20,13 @@ study, not an Apple product.
 | Property | Open | Closed |
 |---|---:|---:|
 | Height | 150.40 | 150.40 |
-| Width | 136.60 | 71.60 |
+| Width | 136.60 | 72.00 |
 | Depth (body) | 5.20 | 10.40 |
 | Depth (incl. plateau) | 7.15 | 12.35 |
 | Mass | 239 g | 239 g |
 
 - Fold axis: vertical, centred; hinge spine diameter 7.40 mm.
-- Half body width: 64.30 mm.
+- Half body width: 64.60 mm.
 - Outer corner radius (plan): 11.60 mm on the free edge of each half.
 - Plan-view corner radius at the hinge ends: 8.00 mm.
 - Rail chamfer: 0.35 mm at 45°, then a 0.55 mm round-over.
@@ -152,8 +152,9 @@ The display content, black bezel and lens glass do not change with colourway.
 - Backdrop: seamless, cool neutral; a soft vertical falloff behind the device.
 - Lights: key softbox 1.2 × 0.8 m at 45° camera-left, 3.2 m; rim strip
   0.25 × 2.4 m camera-right; warm fill 0.8 × 0.8 m low front-left.
-- Camera: 85 mm equivalent, f/8 look, at 0.42 m from device centre; target at
-  hinge mid-height; orbit limits 0.28–0.72 m.
+- Camera: 85 mm equivalent, f/8 look, framed from 0.72 m from device centre so
+  the full 150.40 mm envelope sits inside the 16.1° vertical field with studio
+  margin; target at hinge mid-height; orbit limits 0.28–0.72 m.
 - Exposure: key-driven; no clipped rail highlights, display whites at 0.92.
 
 ## 10. Accuracy rules
@@ -166,3 +167,32 @@ The display content, black bezel and lens glass do not change with colourway.
    bridge is geometry, not a texture.
 5. No external models, HDRIs or bitmap UI assets. Everything is generated.
 6. The page must state that this is an independent concept, not an Apple product.
+
+## 11. Derived envelope relations
+
+These identities are the testable contract between the sheet's numbers:
+
+- Open width = 2 × half body width + hinge spine diameter
+  (2 × 64.60 + 7.40 = 136.60 mm).
+- Closed width = half body width + hinge spine diameter
+  (64.60 + 7.40 = 72.00 mm). The free edge is 68.30 mm from the fold axis and
+  the spine extends 3.70 mm beyond it on the other side.
+- Closed body depth = 2 × body depth (2 × 5.20 = 10.40 mm); add the 1.95 mm
+  plateau raise for the 12.35 mm case.
+- Inner display = open envelope minus the 2.00 mm side and 1.90 mm top/bottom
+  display edges (132.60 × 146.60 mm).
+
+The hinge barrel diameter is fixed at 7.40 mm by §7; the open and registered
+display dimensions are fixed by §3.1. The half width is therefore derived, not
+independently invented.
+
+## 12. Revision log
+
+- 2026-10-24 — Reconciled §2 with the display and hinge sections: half body
+  width 64.30 → 64.60 mm and closed width 71.60 → 72.00 mm. With the old values,
+  open width was 136.00 mm and could not contain the 132.60 mm active area plus
+  the specified 2.00 mm display edges. Added §11 derived relations and the
+  revision log. §9 camera framing distance changed from 0.42 m to 0.72 m: an
+  85 mm equivalent lens at 0.42 m sees 119 mm vertically and cannot frame the
+  150.40 mm envelope. At 0.72 m the envelope fills 74% of the frame height,
+  leaving the studio margin used by the hero composition.

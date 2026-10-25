@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07080a" />
+    <meta
+      name="description"
+      content="iPhone Duo is an independent concept study of a book-style folding iPhone, rendered at real-world scale with procedural Three.js geometry, materials and studio lighting."
+    />
+    <title>iPhone Duo — Two screens. One device.</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#design">Skip to the design story</a>
+
+    <div
+      id="stage"
+      class="stage"
+      role="img"
+      aria-label="A titanium iPhone Duo concept device, rendered at real-world scale in a dark photography studio."
+    ></div>
+    <div class="stage-vignette" aria-hidden="true"></div>
+
+    <div id="fallback" class="fallback" hidden>
+      <div class="poster" aria-hidden="true">
+        <div class="poster__glow"></div>
+        <div class="poster__device">
+          <span class="poster__half poster__half--left"></span>
+          <span class="poster__half poster__half--right"></span>
+          <span class="poster__spine"></span>
+        </div>
+        <p class="poster__caption">Interactive studio unavailable · WebGL2 required</p>
+      </div>
+      <div class="fallback__note">
+        <p class="eyebrow">Fallback view</p>
+        <p class="fallback__copy" data-ref="fallback-note"></p>
+      </div>
+    </div>
+
+    <div id="boot" class="boot" role="status" aria-live="polite">
+      <p class="boot__brand">iPhone <em>Duo</em></p>
+      <span class="boot__track"><span class="boot__bar"></span></span>
+      <p class="boot__note">Preparing the studio</p>
+    </div>
+
+    <header class="nav" data-ref="nav">
+      <a class="nav__brand" href="#top" aria-label="iPhone Duo, back to the top">
+        <span>iPhone</span> <em>Duo</em>
+      </a>
+      <nav class="nav__links" aria-label="Page sections">
+        <a href="#design">Design</a>
+        <a href="#specs">Specification</a>
+        <a href="#concept">Concept</a>
+      </nav>
+      <p class="nav__note"><span class="dot" aria-hidden="true"></span>Independent concept — 2026</p>
+    </header>
+
+    <main>
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>Concept study · 2026</p>
+          <h1 class="hero__title" id="hero-title">
+            Two screens.<br />
+            <span>One device.</span>
+          </h1>
+          <p class="hero__lede">
+            A book-style folding iPhone, drawn in millimetres and rendered live.
+            Titanium rails, a continuous 7.78-inch display and a hinge that closes
+            to a single edge.
+          </p>
+          <p class="hero__meta" data-ref="hero-meta"></p>
+          <a class="scroll-cue" href="#design">
+            <span class="scroll-cue__line" aria-hidden="true"></span>
+            Explore the design
+          </a>
+        </div>
+        <p class="hero__caption" data-ref="stage-caption" aria-hidden="true"></p>
+      </section>
+
+      <section class="design" id="design" aria-labelledby="design-title">
+        <div class="section__inner design__grid">
+          <header class="design__intro">
+            <p class="eyebrow">01 — Design</p>
+            <h2 id="design-title">A fold that reads as one object.</h2>
+            <p class="section__lede">
+              Two rigid halves share a single vertical axis. The display crosses
+              it without a break, so the silhouette stays symmetrical and the
+              device never reads as two panels bolted together.
+            </p>
+          </header>
+
+          <ol class="design__notes">
+            <li class="design-note">
+              <span class="design-note__index">001</span>
+              <div>
+                <h3>Hinge</h3>
+                <p>
+                  A full-height two-barrel spine carries both halves from flat to
+                  closed, with detents at 30, 60, 90, 120 and 150 degrees. The
+                  presentation angle is 158 degrees.
+                </p>
+              </div>
+            </li>
+            <li class="design-note">
+              <span class="design-note__index">002</span>
+              <div>
+                <h3>Display</h3>
+                <p>
+                  A 7.78-inch active area crosses the fold over a 10 mm flexible
+                  bridge. The crease is a soft optical seam, never a hard line.
+                </p>
+              </div>
+            </li>
+            <li class="design-note">
+              <span class="design-note__index">003</span>
+              <div>
+                <h3>Finish</h3>
+                <p>
+                  Brushed titanium, matte rear glass and a polished spine. Four
+                  colourways shift the rail, rear glass, plateau and interface
+                  accent together.
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="specs" id="specs" aria-labelledby="specs-title">
+        <div class="section__inner">
+          <header class="specs__header">
+            <div>
+              <p class="eyebrow">02 — Specification</p>
+              <h2 id="specs-title">Measured, not approximated.</h2>
+            </div>
+            <p class="specs__lede">
+              Every number on this page comes from one reference sheet and is
+              converted once into metres. The scene is 1:1: a 150.40 mm device is
+              0.1504 scene units tall.
+            </p>
+          </header>
+
+          <dl class="specs__grid" data-ref="specs"></dl>
+          <p class="specs__footnote">
+            Independent concept study. Dimensions describe the intended design,
+            not a shipping product.
+          </p>
+        </div>
+      </section>
+
+      <section class="concept" id="concept" aria-labelledby="concept-title">
+        <div class="section__inner concept__inner">
+          <p class="eyebrow">03 — Concept</p>
+          <h2 id="concept-title">
+            Two screens.<br />
+            <span>One device.</span>
+          </h2>
+          <p class="concept__copy">
+            iPhone Duo is an independent design study, built with Three.js and
+            generated entirely in code. No downloaded models, HDRIs or interface
+            bitmaps: only geometry, light and the reference sheet.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div class="footer__brand">
+          <p class="wordmark">iPhone <em>Duo</em></p>
+          <p class="footer__edition">Concept study · 2026</p>
+        </div>
+        <p class="footer__disclaimer" data-ref="disclaimer">
+          iPhone Duo is an independent concept study. It is not an Apple product
+          and is not affiliated with, endorsed by, or sponsored by Apple Inc. All
+          screen artwork is original Duo OS artwork; no Apple assets are used.
+        </p>
+        <div class="footer__meta">
+          <a href="#top">Back to top ↑</a>
+          <p>Procedural geometry · Real-time WebGL2</p>
+        </div>
+      </div>
+    </footer>
+
+    <p id="live-status" class="visually-hidden" role="status" aria-live="polite"></p>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

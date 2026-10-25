@@ -1,0 +1,27 @@
+{
+  "name": "iphone-duo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "iPhone Duo — a procedural, real-scale WebGL concept study.",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^22.19.0",
+    "@types/three": "0.186.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
