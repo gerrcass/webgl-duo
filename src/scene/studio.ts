@@ -532,9 +532,9 @@ const GRADE_SHADER = {
           float angle = 6.2831853 * float(index) / 12.0;
           vec2 offset = vec2(cos(angle), sin(angle)) * radius;
           vec3 sampleColor = texture2D(tDiffuse, vUv + offset).rgb;
-          glow += max(sampleColor - vec3(0.82), vec3(0.0));
+          glow += max(sampleColor - vec3(0.93), vec3(0.0));
         }
-        color.rgb += (glow / 12.0) * uBloomStrength * 0.45;
+        color.rgb += (glow / 12.0) * uBloomStrength * 0.3;
       }
 
       float radial = 1.0 - smoothstep(0.16, 0.85, distance(vUv, vec2(0.5)));

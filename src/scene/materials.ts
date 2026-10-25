@@ -67,7 +67,6 @@ export function createDeviceMaterials(palette: Colourway, displayTexture: Textur
     clearcoatRoughness: 0.18,
     anisotropy: reference.frame.rail.anisotropy,
     anisotropyRotation: (reference.frame.rail.anisotropyRotationDegrees * Math.PI) / 180,
-    anisotropyMap: maps.anisotropy,
     roughnessMap: maps.brushed,
     envMapIntensity: reference.frame.rail.envMapIntensity,
   });
@@ -108,7 +107,6 @@ export function createDeviceMaterials(palette: Colourway, displayTexture: Textur
     roughness: reference.plateau.roughness,
     clearcoat: reference.plateau.clearcoat,
     clearcoatRoughness: 0.3,
-    roughnessMap: maps.brushed,
     envMapIntensity: 0.8,
   });
   plateau.name = 'aluminium-plateau';
@@ -211,11 +209,14 @@ function createBrushedRoughnessMap(): CanvasTexture {
   const contrast = reference.frame.rail.brushedRoughnessContrast;
 
   for (let y = 0; y < size; y += 1) {
-    const rowBase = 214 + (Math.random() - 0.5) * 26 * contrast * 4;
-    const rowStreak = Math.random() < 0.08 ? -18 : 0;
+    // Keep the map in a tight, high-roughness band. A wide per-pixel spread
+    // turns individual rail pixels into near-mirror microfacets, which reads as
+    // white fireflies at grazing angles (especially under SwiftShader).
+    const rowBase = 234 + (Math.random() - 0.5) * 8 * contrast * 4;
+    const rowStreak = Math.random() < 0.08 ? -5 : 0;
     for (let x = 0; x < size; x += 1) {
-      const grain = (Math.random() - 0.5) * 34 * contrast;
-      const value = Math.max(118, Math.min(255, rowBase + rowStreak + grain));
+      const grain = (Math.random() - 0.5) * 6 * contrast;
+      const value = Math.max(210, Math.min(255, rowBase + rowStreak + grain));
       const index = (y * size + x) * 4;
       image.data[index] = value;
       image.data[index + 1] = value;
