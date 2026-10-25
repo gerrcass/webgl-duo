@@ -34,6 +34,8 @@ The studio console sits under the hero copy:
   glass, camera plateau and interface accent together.
 - **Camera** — Hero, Profile and Detail presets reframe the same physical scene;
   the camera moves, the device never rescales.
+- **Orbit and zoom** — drag the stage to orbit, scroll or pinch to zoom, use the
+  arrow and +/- keys when the stage is focused, and press 0 to reset.
 - **Exploded view** — separates the assembly into labelled layers while keeping
   the hinge relationship readable.
 - **Render quality** — Cinematic, Balanced and Efficient tiers trade pixel ratio
@@ -58,8 +60,8 @@ src/app/        duo-app.ts (DuoApp facade), boot.ts (DOM binding), content.ts
 
 `DuoApp` is the only seam tests and the DOM share: `mount`, `dispose`,
 `setColourway`, `setFoldAngle`, `setPreset`, `setExploded`, `setQuality`,
-`getState`. The DOM never reaches into scene objects, and the scene never reads
-the DOM.
+`orbitBy`, `zoomBy`, `resetOrbit`, `getOrbit`, `captureScreenshot`, `getState`.
+The DOM never reaches into scene objects, and the scene never reads the DOM.
 
 The studio is procedural too: a dark cyclorama, softbox reflections built from
 emissive geometry, and a contact shadow. The displays are drawn into canvases at
@@ -94,6 +96,7 @@ uploads them as artifacts):
 | `hero-mobile.png` | The mobile hero at 390 × 844 |
 | `folded.png` | The rig at 90° |
 | `exploded.png` | Labelled exploded assembly |
+| `detail.png` | Detail macro on the camera plateau and rail |
 | `colourways.png` | Four-finish comparison |
 
 Every shot comes from `?test=1`, so it is motion-free; the evidence suite drives explicit deterministic states and waits for a settled frame rather than a wall-clock delay.
@@ -119,12 +122,16 @@ live URL always matches the current build. The build uses relative asset paths
 
 ## Known follow-ups
 
-- Under SwiftShader, a faint specular seam can appear where the rail meets the
-  inner glass at grazing angles; hardware GPUs are clean.
-- The mobile hero can overlap the console at very short viewports; the 390 × 844
-  reference frame is clean.
-- Free orbit and zoom are not exposed yet; the three camera presets are the
-  supported way to reframe the studio.
+- Under SwiftShader, a dashed specular seam remains at the rail/glass silhouette
+  at grazing angles. Materials, tessellation, softbox intensity and glass recess
+  have been adjusted; this is the main outstanding visual defect.
+- The 390 × 844 mobile hero now fills more of the stage but still overlaps the
+  headline; it needs another portrait framing pass.
+- The 10 mm bridge preserves developed length exactly, but the nominal 1.8 mm
+  bend radius is only met around 123° open; full closure is a constant-length
+  hairpin (reference sheet §11.3).
+- The Apple mark is on the left half's exposed rear glass because the right half's
+  rear face carries the cover display and plateau (reference sheet §11.6).
 
 ---
 
