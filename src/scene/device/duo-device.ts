@@ -77,7 +77,7 @@ const GLASS_PLATE_RADII: CornerRadii = BODY_RADII.map((radius) =>
 ) as unknown as CornerRadii;
 
 /** One outline sampling budget for the rail opening and every glass plate. */
-const OUTLINE_SEGMENTS = 20;
+const OUTLINE_SEGMENTS = 40;
 
 const BRIDGE_WIDTH = reference.hinge.bridgeLength;
 const PANEL_INNER = BRIDGE_WIDTH / 2;
@@ -231,7 +231,7 @@ export class DuoDevice implements DuoDeviceModel {
       // visible facets that read as a dashed white outline at 2× DPR; 72 keeps
       // the highlight continuous around the corner.
       cornerSegments: 72,
-      roundOverSegments: 5,
+      roundOverSegments: 12,
     });
     this.geometries.push(railGeometry);
     railGeometry.translate(RIGHT_BODY_CENTRE_X, BODY_CENTRE_Y, 0);

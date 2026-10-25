@@ -21,6 +21,15 @@ async function ready(page: Page): Promise<void> {
   );
 }
 
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))),
+      ),
+  );
+}
+
 async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({
     path: path.join(EVIDENCE_DIR, name),
@@ -36,26 +45,26 @@ test.beforeAll(async () => {
 test.describe('deterministic evidence', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('captures hero, folded and exploded finals', async ({ page }) => {
+  test('captures hero, closed and exploded finals', async ({ page }) => {
     await page.goto('/?test=1');
     await ready(page);
     await shot(page, 'hero-desktop.png');
 
-    await page.evaluate(() => window.__duoApp!.setFoldAngle(90));
-    await page.waitForTimeout(50);
+    await page.evaluate(() => window.__duoApp!.setFoldAngle(0));
+    await settle(page);
     await shot(page, 'folded.png');
 
     await page.evaluate(() => {
       window.__duoApp!.setFoldAngle(158);
       window.__duoApp!.setExploded(true);
     });
-    await page.waitForTimeout(120);
+    await settle(page);
     await expect(page.locator('.explode-label')).toHaveCount(6);
     await expect(page.locator('[data-ref="explode-labels"]')).toBeVisible();
     await shot(page, 'exploded.png');
 
     await page.evaluate(() => window.__duoApp!.setExploded(false));
-    await page.waitForTimeout(80);
+    await settle(page);
   });
 
   test('captures the mobile hero', async ({ page }) => {
@@ -63,6 +72,14 @@ test.describe('deterministic evidence', () => {
     await page.goto('/?test=1');
     await ready(page);
     await shot(page, 'hero-mobile.png');
+  });
+
+  test('captures the detail macro', async ({ page }) => {
+    await page.goto('/?test=1');
+    await ready(page);
+    await page.evaluate(() => window.__duoApp!.setPreset('detail'));
+    await settle(page);
+    await shot(page, 'detail.png');
   });
 
   test('captures the four-finish comparison', async ({ page }) => {
@@ -88,14 +105,17 @@ test.describe('deterministic evidence', () => {
       if (!context) throw new Error('no 2d context');
       context.fillStyle = '#07080a';
       context.fillRect(0, 0, canvas.width, canvas.height);
+      const names = ['DUSK', 'FROST', 'BLOOM', 'NOIR'] as const;
       tiles.forEach((tile, index) => {
-        context.drawImage(
-          tile,
-          (index % 2) * tileWidth,
-          Math.floor(index / 2) * tileHeight,
-          tileWidth,
-          tileHeight,
-        );
+        const x = (index % 2) * tileWidth;
+        const y = Math.floor(index / 2) * tileHeight;
+        context.drawImage(tile, x, y, tileWidth, tileHeight);
+        context.fillStyle = 'rgba(7, 8, 10, 0.62)';
+        context.fillRect(x + 20, y + 20, 116, 30);
+        context.fillStyle = '#e6e2da';
+        context.font = '500 13px "Helvetica Neue", Helvetica, Arial, sans-serif';
+        context.letterSpacing = '2px';
+        context.fillText(names[index] + ' TITANIUM', x + 32, y + 40);
       });
       return canvas.toDataURL('image/png');
     });

@@ -35,7 +35,9 @@ export function heroMeta(): string {
 
 export function stageCaption(
   foldAngle: number = reference.hinge.presentationAngleDegrees,
+  exploded = false,
 ): string {
+  if (exploded) return 'Fig. 02 — Exploded · six construction layers';
   if (foldAngle <= 0) {
     return `Fig. 01 — Closed · ${formatMillimetres(reference.envelope.closedWidth)} × ${formatMillimetres(reference.envelope.height)} × ${formatMillimetres(reference.envelope.closedBodyDepth)} mm`;
   }

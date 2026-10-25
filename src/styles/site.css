@@ -1742,7 +1742,7 @@ body[data-exploded="true"] .hero__copy .console {
   top: 10.5vh;
   display: grid;
   gap: 0.35rem;
-  max-width: 14rem;
+  max-width: 11rem;
 }
 
 .explode-labels__head .eyebrow {
@@ -1862,5 +1862,34 @@ body[data-preset="detail"] .hero__copy {
 }
 
 body[data-preset="detail"] .hero__copy .console {
+  pointer-events: auto;
+}
+
+/* Let drags through the hero reach the canvas; only controls take input. */
+.hero {
+  pointer-events: none;
+}
+
+.hero a,
+.hero button,
+.hero input,
+.hero select,
+.hero label,
+.hero .fold-control,
+.hero .console {
+  pointer-events: auto;
+}
+
+.hero__copy {
+  pointer-events: none;
+}
+
+.hero__copy a,
+.hero__copy button,
+.hero__copy input,
+.hero__copy select,
+.hero__copy label,
+.hero__copy .fold-control,
+.hero__copy .console {
   pointer-events: auto;
 }

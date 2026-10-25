@@ -145,7 +145,7 @@ export const reference = {
       envMapIntensity: 0.24,
       brushedRoughnessContrast: ratio(0.025),
       /** Art direction: a darker brushed finish, not a chrome outline. */
-      tintGain: ratio(0.65),
+      tintGain: ratio(0.58),
     },
     frontGlass: {
       roughness: ratio(0.045),
@@ -341,7 +341,7 @@ export const reference = {
     {
       id: 'dusk',
       name: 'Dusk Titanium',
-      railTint: '#4b5060',
+      railTint: '#5a5f6e',
       rearGlass: '#2c3140',
       plateauTint: '#4d5363',
       accent: '#8b7dff',

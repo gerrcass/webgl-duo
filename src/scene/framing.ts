@@ -38,7 +38,7 @@ export const HERO_FOV_DEGREES =
 /** Art direction that is not a product dimension. */
 const COMPOSITION = {
   /** Fraction of the viewport width the open device should occupy in portrait. */
-  portraitWidthFill: 0.8,
+  portraitWidthFill: 0.86,
   /** Device height as a fraction of the hero viewport at the desktop shot. */
   desktopHeightFill: 0.8,
   /** Screen fraction the device centre sits at on desktop (right of centre). */
@@ -62,7 +62,7 @@ const COMPOSITION = {
   profileAzimuthRadians: 1.2,
   profileElevationRadians: 0.045,
   /** Detail is a macro on the hinge spine, seam and adjacent rails. */
-  detailAzimuthRadians: 0.68,
+  detailAzimuthRadians: 0.9,
   detailElevationRadians: 0.18,
   detailDistance: 0.46,
   detailTarget: { x: 0.0, y: 0.076, z: 0.004 },
@@ -113,7 +113,7 @@ export function computeHeroFraming(
   const portraitFitWidth = portraitRequiredWidth / (2 * halfFovTan * aspect);
 
   const settledDistance = portrait
-    ? Math.max(portraitFitWidth, projectedHeight / 0.4 / (2 * halfFovTan))
+    ? Math.max(portraitFitWidth, projectedHeight / 0.56 / (2 * halfFovTan))
     : Math.max(sheetDistance, fitHeightDistance, fitWidthDistance);
   const introEase = easeIntro(introProgress);
   const distance = settledDistance * (1.06 - 0.06 * introEase);

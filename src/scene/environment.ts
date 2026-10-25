@@ -42,21 +42,21 @@ const SOFTBOXES: readonly Softbox[] = [
     height: reference.studio.key.height,
     position: [-1.78, 1.97, 1.78],
     color: reference.studio.key.color,
-    intensity: 2.6,
+    intensity: 1.25,
   },
   {
     width: reference.studio.rim.width,
     height: reference.studio.rim.height,
     position: [1.9, 1.5, -1.2],
     color: reference.studio.rim.color,
-    intensity: 1.9,
+    intensity: 0.85,
   },
   {
     width: reference.studio.fill.width,
     height: reference.studio.fill.height,
     position: [-1.1, 0.5, 1.7],
     color: reference.studio.fill.color,
-    intensity: 0.75,
+    intensity: 0.55,
   },
   {
     // A large scrim between camera and product. Its reflection is what makes
@@ -65,7 +65,7 @@ const SOFTBOXES: readonly Softbox[] = [
     height: 1.4,
     position: [0.1, 2.1, 2.5],
     color: '#dbe5ff',
-    intensity: 0.55,
+    intensity: 0.4,
   },
   {
     // A broad frontal bounce card, just above the camera axis. This is the
