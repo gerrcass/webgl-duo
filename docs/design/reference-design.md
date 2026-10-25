@@ -89,6 +89,31 @@ study, not an Apple product.
   half, 22 mm above the bottom edge.
 - **Wordmark:** "iPhone" 1.6 mm cap height, 0.08 mm engraved, 5.5 mm below the mark.
 
+### 4.1 Material construction constants
+
+These values make the §4 material families reproducible. They are renderer
+constants, not new product dimensions; the millimetre values are physical.
+
+| Constant | Value | Used by |
+|---|---:|---|
+| Rail metalness / environment gain | 1.0 / 1.35 | titanium rail |
+| Rail anisotropy rotation | 90° (brushing along Y) | titanium rail |
+| Brushed roughness contrast | 0.16 | brushed-metal map |
+| Front glass clearcoat roughness | 0.03 | Ceramic Shield |
+| Micro-scratch tile scale | 9.0 mm | glass roughness map |
+| Rear glass clearcoat roughness | 0.35 | matte rear |
+| Orange-peel bump wavelength | 1.2 mm | rear normal map |
+| Fingerprint roughness strength | 0.18 | rear smudge map |
+| Plateau metalness / clearcoat | 0.95 / 0.05 | 7000-series aluminium |
+| Sapphire IOR / roughness | 1.77 / 0.06 | lens covers |
+| Gasket colour / roughness | `#050507` / 0.85 | hinge elastomer |
+| Display emissive placeholder | 0.8 | inner display |
+
+Procedural map texel sizes: brushed 512, micro-scratch 256, orange-peel 512,
+fingerprint 256. Brushed metal repeats 3×, micro-scratch 2×, fingerprint 2×3.
+No map is downloaded; all are generated from canvas/data buffers at runtime.
+
+
 ## 5. Camera system
 
 Triple cluster in the plateau, triangular layout, optical axes normal to the rear.

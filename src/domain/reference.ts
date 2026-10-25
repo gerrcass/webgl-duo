@@ -120,17 +120,34 @@ export const reference = {
       roughness: ratio(0.28),
       clearcoat: ratio(0.12),
       anisotropy: ratio(0.65),
+      /** Brushing runs along the long (Y) axis, so the highlight is rotated 90°. */
+      anisotropyRotationDegrees: 90,
+      metalness: ratio(1),
+      envMapIntensity: 1.35,
+      brushedRoughnessContrast: ratio(0.16),
     },
     frontGlass: {
       roughness: ratio(0.045),
       clearcoat: ratio(1),
       ior: ratio(1.52),
       microScratchRoughnessAmplitude: ratio(0.015),
+      clearcoatRoughness: ratio(0.03),
+      metalness: ratio(0),
+      envMapIntensity: 1.2,
+      /** World-space repeat of the micro-scratch tile, in millimetres. */
+      scratchScale: mm(9.0),
     },
     rearGlass: {
       roughness: ratio(0.42),
       clearcoat: ratio(0.25),
       orangePeel: mm(0.06),
+      clearcoatRoughness: ratio(0.35),
+      metalness: ratio(0),
+      /** Bump wavelength of the orange-peel surface, art direction §4. */
+      orangePeelScale: mm(1.2),
+      /** Strength of the fingerprint roughness modulation (dimensionless). */
+      fingerprintStrength: ratio(0.18),
+      envMapIntensity: 1.0,
     },
     hingeSpine: {
       roughness: ratio(0.1),
@@ -163,8 +180,43 @@ export const reference = {
     raise: mm(1.95),
     chamfer: mm(0.45),
     roughness: ratio(0.32),
+    metalness: ratio(0.95),
+    clearcoat: ratio(0.05),
+    envMapIntensity: 1.1,
     /** Placement: centred on the right half, 8.0 mm below the top edge. */
     topInset: mm(8.0),
+  },
+
+  /** §4/§5 Sapphire lens covers and the material families that stay black. */
+  sapphire: {
+    ior: ratio(1.77),
+    roughness: ratio(0.06),
+    clearcoat: ratio(1),
+    clearcoatRoughness: ratio(0.04),
+    envMapIntensity: 1.4,
+  },
+  gasket: {
+    color: '#050507',
+    roughness: ratio(0.85),
+    metalness: ratio(0),
+  },
+  display: {
+    /** Emissive placeholder until Ticket 05 draws Duo OS into the panels. */
+    emissiveIntensity: ratio(0.8),
+    glassRoughness: ratio(0.045),
+    metalness: ratio(0),
+    envMapIntensity: ratio(0.22),
+  },
+
+  /** §4 Procedural map construction: sizes are texels, scales are metres. */
+  materialMaps: {
+    brushedSize: 512,
+    scratchSize: 256,
+    orangePeelSize: 512,
+    fingerprintSize: 256,
+    brushedRepeat: 3,
+    scratchRepeat: 2,
+    fingerprintRepeat: [2, 3] as const,
   },
 
   /** §5 Camera system. Positions are from the plateau centre, in plate axes. */
