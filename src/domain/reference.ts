@@ -172,15 +172,22 @@ export const reference = {
       grooveDepth: mm(0.06),
       grooveSpan: mm(44.0),
       endCapStep: mm(0.2),
+      endCapRings: 5,
     },
     antennaBands: {
       width: mm(0.45),
       perHalf: 5,
       roughnessDelta: ratio(0.08),
+      /** §11.6: five bands per half on the free-edge rail. */
+      positionsY: [22.0, 50.0, 78.0, 106.0, 134.0].map(mm),
+      depth: mm(4.0),
+      relief: mm(0.012),
     },
     appleMark: {
       height: mm(12.0),
       bottomInset: mm(22.0),
+      /** Mirror-polished relief stands this far off the matte rear glass. */
+      relief: mm(0.012),
     },
     wordmark: {
       capHeight: mm(1.6),
@@ -262,13 +269,32 @@ export const reference = {
     microphone: { x: mm(16.0), y: mm(-12.0), diameter: mm(1.6) },
     sapphireThickness: mm(0.45),
     lensRecess: mm(0.35),
+    /** §11.6 construction inside the Ø ring: bezel, barrel, 6 elements, iris. */
+    lensConstruction: {
+      bezelRingWidth: mm(1.1),
+      barrelDepth: mm(1.6),
+      elements: 6,
+      elementInset: mm(0.28),
+      irisRatio: ratio(0.34),
+      counterboreRim: mm(0.12),
+      flutterDepth: mm(0.05),
+    },
+    flashConstruction: { warmRatio: ratio(0.5), recess: mm(0.1), rim: mm(0.35) },
+    lidarConstruction: { recess: mm(0.15), rings: 18, rim: mm(0.35) },
   },
 
   /** §6 Edges, ports and controls */
   controls: {
     usbC: { width: mm(8.3), height: mm(2.6), depth: mm(1.2) },
-    speakerHole: { diameter: mm(1.1), pitch: mm(2.0), perSide: 6 },
-    microphone: { diameter: mm(0.8) },
+    speakerHole: {
+      diameter: mm(1.1),
+      pitch: mm(2.0),
+      perSide: 6,
+      /** Centre distance from the USB-C centreline to the first hole. */
+      firstOffset: mm(6.6),
+      depth: mm(1.1),
+    },
+    microphone: { diameter: mm(0.8), depth: mm(1.0) },
     power: { width: mm(16.0), height: mm(2.6) },
     volumeUp: { width: mm(10.5), height: mm(2.2) },
     volumeDown: { width: mm(10.5), height: mm(2.2) },
@@ -276,6 +302,15 @@ export const reference = {
     cameraControl: { width: mm(11.0), height: mm(2.4) },
     buttonProtrusion: mm(0.55),
     goldContacts: 24,
+    /** §11.6 vertical centres on the rails, millimetres from the bottom. */
+    powerCentreY: mm(116.0),
+    volumeUpCentreY: mm(101.25),
+    volumeDownCentreY: mm(89.25),
+    actionCentreY: mm(112.0),
+    cameraControlCentreY: mm(60.0),
+    usbTongue: { width: mm(4.2), thickness: mm(0.6), depth: mm(1.0) },
+    microphoneBottomOffsets: [mm(46.0), mm(26.0)] as const,
+    microphoneTopX: mm(52.0),
   },
 
   /** §8 Colourways */

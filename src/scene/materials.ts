@@ -51,6 +51,19 @@ export interface DeviceMaterials {
   readonly spine: MeshPhysicalMaterial;
   readonly gasket: MeshPhysicalMaterial;
   readonly sapphire: MeshPhysicalMaterial;
+  readonly lensBezel: MeshPhysicalMaterial;
+  readonly lensBarrel: MeshPhysicalMaterial;
+  readonly lensCoated: MeshPhysicalMaterial;
+  readonly lensIris: MeshPhysicalMaterial;
+  readonly flashWarm: MeshPhysicalMaterial;
+  readonly flashCool: MeshPhysicalMaterial;
+  readonly lidar: MeshPhysicalMaterial;
+  readonly gold: MeshPhysicalMaterial;
+  readonly cavity: MeshPhysicalMaterial;
+  readonly buttonTop: MeshPhysicalMaterial;
+  readonly buttonChamfer: MeshPhysicalMaterial;
+  readonly antenna: MeshPhysicalMaterial;
+  readonly mark: MeshPhysicalMaterial;
 }
 
 export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
@@ -136,10 +149,159 @@ export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
     clearcoatRoughness: reference.sapphire.clearcoatRoughness,
     ior: reference.sapphire.ior,
     envMapIntensity: 1.1,
+    // Thin sapphire reads as a dark, slightly transparent cover: the coated
+    // element, barrel rings and iris behind it stay visible.
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
   });
   sapphire.name = 'sapphire-lens-cover';
 
-  return { rail, frontGlass, rearGlass, plateau, spine, gasket, sapphire };
+  const lensBezel = physical({
+    color: 0x050507,
+    metalness: 0.85,
+    roughness: 0.36,
+    clearcoat: 0.2,
+    envMapIntensity: 0.6,
+  });
+  lensBezel.name = 'lens-bezel';
+
+  const lensBarrel = physical({
+    color: 0x0b0c10,
+    metalness: 0.9,
+    roughness: 0.24,
+    envMapIntensity: 0.7,
+    side: DoubleSide,
+  });
+  lensBarrel.name = 'lens-barrel';
+
+  const lensCoated = physical({
+    color: 0x101a3a,
+    metalness: 0,
+    roughness: 0.04,
+    clearcoat: 1,
+    clearcoatRoughness: 0.02,
+    iridescence: 1,
+    iridescenceIOR: 1.6,
+    iridescenceThicknessRange: [180, 520],
+    envMapIntensity: 1.8,
+  });
+  lensCoated.name = 'lens-coated-element';
+
+  const lensIris = physical({
+    color: 0x020204,
+    metalness: 0.4,
+    roughness: 0.08,
+    clearcoat: 1,
+    envMapIntensity: 0.4,
+  });
+  lensIris.name = 'lens-iris';
+
+  const flashWarm = physical({
+    color: 0xf2cf9a,
+    emissive: 0xffb45e,
+    emissiveIntensity: 0.55,
+    roughness: 0.22,
+    metalness: 0,
+    clearcoat: 1,
+  });
+  flashWarm.name = 'flash-warm-led';
+
+  const flashCool = physical({
+    color: 0xdde8f4,
+    emissive: 0xd9eaff,
+    emissiveIntensity: 0.4,
+    roughness: 0.2,
+    metalness: 0,
+    clearcoat: 1,
+  });
+  flashCool.name = 'flash-cool-led';
+
+  const lidar = physical({
+    color: 0x25090f,
+    emissive: 0x2a050c,
+    emissiveIntensity: 0.35,
+    metalness: 0.2,
+    roughness: 0.18,
+    clearcoat: 1,
+    clearcoatRoughness: 0.05,
+  });
+  lidar.name = 'lidar-ruby-window';
+
+  const gold = physical({
+    color: 0xc9a44e,
+    metalness: 1,
+    roughness: 0.28,
+    clearcoat: 0.4,
+    envMapIntensity: 1.2,
+  });
+  gold.name = 'usb-gold-contacts';
+
+  const cavity = physical({
+    color: 0x020203,
+    metalness: 0.2,
+    roughness: 0.95,
+    side: DoubleSide,
+  });
+  cavity.name = 'machined-cavity';
+
+  const buttonTop = physical({
+    color: palette.railTint,
+    metalness: 0.9,
+    roughness: 0.42,
+  });
+  buttonTop.name = 'button-matte-top';
+
+  const buttonChamfer = physical({
+    color: palette.railTint,
+    metalness: 1,
+    roughness: 0.14,
+    clearcoat: 0.8,
+    envMapIntensity: 1.3,
+  });
+  buttonChamfer.name = 'button-polished-chamfer';
+
+  const antenna = physical({
+    color: palette.railTint,
+    metalness: 1,
+    roughness: reference.frame.rail.roughness + reference.frame.antennaBands.roughnessDelta,
+    roughnessMap: maps.brushed,
+  });
+  antenna.name = 'antenna-band';
+
+  const mark = physical({
+    color: new Color(palette.railTint).lerp(new Color(0xffffff), 0.28),
+    metalness: 1,
+    roughness: 0.06,
+    clearcoat: 1,
+    envMapIntensity: 1.6,
+    transparent: true,
+    alphaTest: 0.05,
+  });
+  mark.name = 'mirror-apple-mark';
+
+  return {
+    rail,
+    frontGlass,
+    rearGlass,
+    plateau,
+    spine,
+    gasket,
+    sapphire,
+    lensBezel,
+    lensBarrel,
+    lensCoated,
+    lensIris,
+    flashWarm,
+    flashCool,
+    lidar,
+    gold,
+    cavity,
+    buttonTop,
+    buttonChamfer,
+    antenna,
+    mark,
+  };
 }
 
 export function applyColourway(materials: DeviceMaterials, palette: Colourway): void {
@@ -147,6 +309,10 @@ export function applyColourway(materials: DeviceMaterials, palette: Colourway): 
   materials.rearGlass.color.set(palette.rearGlass);
   materials.plateau.color.set(palette.plateauTint);
   materials.spine.color.set(palette.railTint).lerp(new Color(0xffffff), 0.18);
+  materials.antenna.color.set(palette.railTint);
+  materials.buttonTop.color.set(palette.railTint);
+  materials.buttonChamfer.color.set(palette.railTint);
+  materials.mark.color.set(palette.railTint).lerp(new Color(0xffffff), 0.28);
 }
 
 /** Texture anisotropy follows the quality tier without touching geometry. */

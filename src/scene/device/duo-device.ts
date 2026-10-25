@@ -40,6 +40,7 @@ import {
   type CornerRadii,
 } from '../geometry/ring-prism';
 import { mirrorGeometryX } from '../geometry/mirror';
+import { createHardware } from './hardware';
 import type { DuoDeviceModel } from './device-model';
 import type { QualityTier } from '../../domain/quality';
 
@@ -229,9 +230,19 @@ export class DuoDevice implements DuoDeviceModel {
 
     const shellGeometries = HINGE_SHELLS.map((shell) => {
       const geometry = createShellGeometry(shell);
+      geometry.translate(0, BODY_CENTRE_Y, 0);
       this.geometries.push(geometry);
       return geometry;
     });
+
+    // Ticket 06 close-range hardware: lenses, buttons, port, holes, bands,
+    // rear mark and hinge detail. Added to the same half groups so they fold.
+    const hardware = createHardware(this.materialsByName);
+    this.geometries.push(...hardware.geometries);
+    this.materials.push(...hardware.extraMaterials);
+    this.textures.push(...hardware.textures);
+    this.rightHalf.add(hardware.right);
+    this.leftHalf.add(hardware.left);
 
     this.buildHalf(this.rightHalf, {
       rail: railGeometry,
@@ -293,7 +304,7 @@ export class DuoDevice implements DuoDeviceModel {
     this.leftHalf.name = 'left-half';
     this.rightHalf.name = 'right-half';
     this.object.name = 'iphone-duo';
-    this.object.add(this.leftHalf, this.rightHalf, this.bridge, seam);
+    this.object.add(this.leftHalf, this.rightHalf, this.bridge, seam, hardware.hinge);
 
     this.setColourway(colourway);
     this.setFoldAngle(reference.hinge.presentationAngleDegrees);

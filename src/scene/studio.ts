@@ -61,6 +61,7 @@ export class StudioScene {
   private readonly fillArea: RectAreaLight;
   private readonly motionEnabled: boolean;
   private readonly rearView: boolean;
+  private readonly detailView: boolean;
 
   private viewportWidth = 1;
   private viewportHeight = 1;
@@ -69,14 +70,23 @@ export class StudioScene {
   constructor(
     renderer: WebGLRenderer,
     quality: QualityTier,
-    options: { motionEnabled: boolean; device?: DuoDeviceModel; rearView?: boolean },
+    options: {
+      motionEnabled: boolean;
+      device?: DuoDeviceModel;
+      rearView?: boolean;
+      detailView?: boolean;
+    },
   ) {
     RectAreaLightUniformsLib.init();
 
     this.renderer = renderer;
+    // The post pipeline issues several passes per frame; accumulate their
+    // counters so renderer.info reports the whole frame's budget.
+    renderer.info.autoReset = false;
     this.quality = quality;
     this.motionEnabled = options.motionEnabled;
     this.rearView = options.rearView === true;
+    this.detailView = options.detailView === true;
     this.device = options.device ?? new DuoDevice();
 
     this.camera = new PerspectiveCamera(
@@ -124,6 +134,13 @@ export class StudioScene {
   }
 
   applyState(state: DuoState): void {
+    if (this.detailView) {
+      // Ticket 06 evidence: open flat, rear facing the camera, macro framing.
+      this.device.setFoldAngle(180);
+      this.device.setColourway(state.colourway);
+      this.device.object.rotation.y = Math.PI;
+      return;
+    }
     this.device.setFoldAngle(state.foldAngle);
     this.device.setColourway(state.colourway);
     this.device.setExploded(state.exploded);
@@ -196,6 +213,7 @@ export class StudioScene {
   }
 
   render(): void {
+    this.renderer.info.reset();
     if (this.composer) {
       this.composer.render();
     } else {
