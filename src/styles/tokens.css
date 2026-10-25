@@ -1,0 +1,55 @@
+:root {
+  color-scheme: dark;
+
+  /* Surface */
+  --bg: #07080a;
+  --bg-deep: #040506;
+  --bg-raised: #0c0e12;
+  --ink: #f2efe9;
+  --ink-soft: #d5d0c7;
+  --ink-dim: #a49f96;
+  --ink-faint: #6f6d67;
+  --line: rgba(242, 239, 233, 0.14);
+  --line-soft: rgba(242, 239, 233, 0.075);
+
+  /* Dusk Titanium UI accent (§8) */
+  --accent: #8b7dff;
+  --accent-soft: rgba(139, 125, 255, 0.16);
+  --accent-glow: rgba(139, 125, 255, 0.35);
+
+  /* Type */
+  --font-sans: "Helvetica Neue", "Nimbus Sans", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Mono", "DejaVu Sans Mono",
+    "Liberation Mono", monospace;
+
+  --step--2: 0.6875rem;
+  --step--1: 0.8125rem;
+  --step-0: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  --step-1: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  --step-2: clamp(1.875rem, 1.25rem + 2.6vw, 3.5rem);
+  --step-3: clamp(3.1rem, 1.2rem + 7.6vw, 8.5rem);
+
+  /* Space and layout */
+  --gutter: clamp(1.25rem, 4vw, 4.5rem);
+  --nav-height: 4.5rem;
+  --max-width: 90rem;
+  --section-space: clamp(5rem, 13vh, 10rem);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@media (max-width: 860px) {
+  :root {
+    --nav-height: 3.75rem;
+    --gutter: 1.25rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  :root {
+    --gutter: 5.5rem;
+    --max-width: 100rem;
+  }
+}
