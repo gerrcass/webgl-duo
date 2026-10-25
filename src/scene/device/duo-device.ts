@@ -68,10 +68,13 @@ const DISPLAY_TOP = reference.envelope.height - reference.body.displayEdgeTopBot
 const DISPLAY_HEIGHT = DISPLAY_TOP - DISPLAY_BOTTOM;
 
 const DISPLAY_RADII: CornerRadii = [
-  reference.body.hingeEndCornerRadius - reference.body.displayEdgeSide,
+  // The sheet specifies outer body corners, not active-area corners. The hinge
+  // edge of the active area is a straight full-height line: a rounded
+  // hinge-end corner leaves a triangular gap where the straight bridge meets it.
+  0,
   reference.body.freeEdgeCornerRadius - reference.body.displayEdgeSide,
   reference.body.freeEdgeCornerRadius - reference.body.displayEdgeSide,
-  reference.body.hingeEndCornerRadius - reference.body.displayEdgeSide,
+  0,
 ];
 
 const PLATEAU_CENTRE_Y =
@@ -88,12 +91,12 @@ const COVER_RADII: CornerRadii = [
 ];
 
 /**
- * Panel and overlay sit two microns apart. These are construction epsilons
- * chosen to beat z-fighting, not product dimensions; the sheet owns the 0.14 mm
- * display recess that places the whole stack.
+ * The panel and bridge must clear the opaque front-glass plate by more than a
+ * depth-buffer epsilon. At 2 µm the tilted right panel z-fought the backing and
+ * produced vertical stripes at 158°; 50 µm is still visually flush but stable.
  */
-const PANEL_LIFT = 0.000002;
-const BRIDGE_LIFT = 0.000001;
+const PANEL_LIFT = 0.00005;
+const BRIDGE_LIFT = PANEL_LIFT;
 
 const INNER_PANEL_Z = -reference.body.displayRecess + PANEL_LIFT;
 const INNER_GLASS_Z = INNER_PANEL_Z + reference.display.innerGlassGap;

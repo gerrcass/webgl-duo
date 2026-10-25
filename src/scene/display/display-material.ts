@@ -1,5 +1,4 @@
 import {
-  AdditiveBlending,
   DoubleSide,
   MeshPhysicalMaterial,
   type Texture,
@@ -118,7 +117,6 @@ export function createDisplayGlass(name: string): MeshPhysicalMaterial {
     specularIntensity: 1,
     transparent: true,
     opacity: reference.display.glassOpacity,
-    blending: AdditiveBlending,
     depthWrite: false,
     envMapIntensity: reference.display.glassEnvMapIntensity,
     side: DoubleSide,
