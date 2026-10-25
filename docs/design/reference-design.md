@@ -56,8 +56,9 @@ study, not an Apple product.
 | Resolution | 1179 × 2556 |
 | Density | 477 ppi |
 | Refresh | 1–120 Hz LTPO |
-| Cutout | 7.5 × 24.0 mm pill, 4.2 mm from active top |
+| Cutout | 24.0 × 7.5 mm pill (width × height), 4.2 mm from visible active top |
 | Cover glass | Ceramic Shield 2, 0.55 mm |
+| Visible active area | 62.80 × 79.00 mm (see §11.5) |
 
 ### 3.3 Screen content
 - **Cover:** Duo OS lock screen — 09:41, "Saturday, 24 October", weather
@@ -283,6 +284,30 @@ closure; it would need a new sheet dimension for the dive angle.
 The bridge anchor at 5.00 mm is derived from the 10.0 mm bridge, not a new
 number. The plateau centre is derived from the half width and the top inset.
 
+### 11.5 Cover display and plateau
+
+The 136.10 mm active panel and the 57.00 mm camera plateau cannot both be fully
+visible on the 150.40 mm rear face. The plateau occupies 85.40–142.40 mm above
+the bottom rail, so the cover panel is exposed only below it. The panel is
+still the sheet's 62.80 × 136.10 mm part; its top 55.70 mm is **behind the
+plateau and never lit**, not overlaid with artwork. The lock screen is composed
+for the exposed pane, which is what the user sees when the device is closed.
+
+| Quantity | Value | Meaning |
+|---|---:|---|
+| Full active panel | 62.80 × 136.10 | §3.2, bottom 5.00 mm above the rail |
+| Plateau footprint | 57.00 × 57.00 | 8.00 mm top inset; bottom at 85.40 |
+| Guard band | 1.40 | black bezel between the lit pane and the plateau |
+| Visible active area | 62.80 × 79.00 | the only lit cover pixels |
+| Hidden active area | 55.70 | behind the plateau; no mesh, no artwork |
+| Bottom inset | 5.00 | optical margin above the bottom rail |
+
+The cutout is read as **24.0 mm wide × 7.5 mm tall** (not 24 mm tall): the
+sheet's "7.5 × 24.0" is height × width, the only orientation consistent with a
+top-centre camera bar. It sits 4.20 mm below the visible active top. Solving
+the layout this way keeps a real active panel, a real 0.55 mm cover glass and a
+real plateau; nothing overlaps a lit display with the camera island.
+
 ## 12. Revision log
 
 - 2026-10-24 — Reconciled §2 with the display and hinge sections: half body
@@ -303,6 +328,12 @@ number. The plateau centre is derived from the half width and the top inset.
   is not achievable at full closure. Added the construction dimensions in
   §11.4. The hero default is the sheet's 158° presentation angle and the page
   now exposes a 0–180° fold control with detents at 30/60/90/120/150.
+- 2026-10-25 — Display ticket. Added §11.5: the cover panel is exposed only
+  below the 57 mm plateau (62.80 × 79.00 mm visible, 55.70 mm hidden behind the
+  island). Resolved the 7.5 × 24.0 mm cutout as width × height so the pill is a
+  24.0 × 7.5 mm top-centre bar, not a 24 mm tall slot. The inner artwork is one
+  1968 × 2176 canvas; the bridge maps its own 10 mm arc-length slice, so the
+  composition stays continuous at every fold angle.
 - 2026-10-25 — Fold-angle convention corrected to degrees of **openness**:
   0° closed, 180° open. The sheet's "158° presentation angle" and user story 8
   require a hero that shows both the inner display and the rear design, which a
