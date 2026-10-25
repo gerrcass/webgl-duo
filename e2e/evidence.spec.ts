@@ -21,6 +21,15 @@ async function ready(page: Page): Promise<void> {
   );
 }
 
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))),
+      ),
+  );
+}
+
 async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({
     path: path.join(EVIDENCE_DIR, name),
@@ -42,20 +51,20 @@ test.describe('deterministic evidence', () => {
     await shot(page, 'hero-desktop.png');
 
     await page.evaluate(() => window.__duoApp!.setFoldAngle(90));
-    await page.waitForTimeout(50);
+    await settle(page);
     await shot(page, 'folded.png');
 
     await page.evaluate(() => {
       window.__duoApp!.setFoldAngle(158);
       window.__duoApp!.setExploded(true);
     });
-    await page.waitForTimeout(120);
+    await settle(page);
     await expect(page.locator('.explode-label')).toHaveCount(6);
     await expect(page.locator('[data-ref="explode-labels"]')).toBeVisible();
     await shot(page, 'exploded.png');
 
     await page.evaluate(() => window.__duoApp!.setExploded(false));
-    await page.waitForTimeout(80);
+    await settle(page);
   });
 
   test('captures the mobile hero', async ({ page }) => {
@@ -63,6 +72,14 @@ test.describe('deterministic evidence', () => {
     await page.goto('/?test=1');
     await ready(page);
     await shot(page, 'hero-mobile.png');
+  });
+
+  test('captures the detail macro', async ({ page }) => {
+    await page.goto('/?test=1');
+    await ready(page);
+    await page.evaluate(() => window.__duoApp!.setPreset('detail'));
+    await settle(page);
+    await shot(page, 'detail.png');
   });
 
   test('captures the four-finish comparison', async ({ page }) => {

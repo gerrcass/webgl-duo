@@ -147,12 +147,12 @@ export function boot(): void {
   );
 
   const LABEL_COPY: Record<ExplodeLayerId, { name: string; detail: string }> = {
-    'cover-glass': { name: 'Cover glass', detail: 'Ceramic shield · 0.34 mm recess' },
+    'cover-glass': { name: 'Cover glass', detail: 'Ceramic Shield 2 · 0.55 mm' },
     'inner-display': { name: 'Inner display', detail: '7.78 in · 10 mm bridge' },
     'chassis-hinge': { name: 'Chassis & hinge', detail: 'Titanium · 148 mm spine' },
-    battery: { name: 'Battery', detail: 'Dual-cell · 4 800 mAh' },
+    battery: { name: 'Battery', detail: 'Dual-cell · concept pack' },
     'rear-glass': { name: 'Rear glass', detail: 'Matte · orange-peel' },
-    'camera-module': { name: 'Camera module', detail: '48 MP · 57 mm plateau' },
+    'camera-module': { name: 'Camera module', detail: '48/13/77 mm · 57 mm plateau' },
   };
   const labelNodes = new Map<ExplodeLayerId, HTMLElement>();
   explodeLabels.append(
@@ -216,6 +216,7 @@ export function boot(): void {
   };
 
   const showFallback = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    window.clearTimeout(slowTimer);
     body.classList.add('is-fallback');
     body.classList.remove('is-ready');
     body.dataset.fallbackReason = snapshot.fallbackReason ?? 'unknown';
@@ -242,7 +243,8 @@ export function boot(): void {
     foldSlider.value = String(degrees);
     foldSlider.setAttribute('aria-valuetext', describeFold(degrees));
     foldOutput.textContent = `${degrees}°`;
-    stageCaptionElement.textContent = stageCaption(degrees);
+    stageCaptionElement.textContent = stageCaption(degrees, snapshot.exploded);
+    body.classList.toggle('is-exploded', snapshot.exploded);
   };
 
   const syncColourControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
@@ -337,7 +339,7 @@ export function boot(): void {
   const armSlowTimer = (): void => {
     window.clearTimeout(slowTimer);
     slowTimer = window.setTimeout(() => {
-      if (!app || app.getState().status === 'ready') return;
+      if (!app || app.getState().status !== 'idle') return;
       body.dataset.slow = 'true';
       showFallback({ ...app.getState(), status: 'fallback', fallbackReason: 'timeout' });
     }, BOOT_TIMEOUT_MS);
@@ -513,6 +515,105 @@ export function boot(): void {
     },
     true,
   );
+
+  // Pointer, wheel and keyboard orbit/zoom. The stage is the camera surface;
+  // controls live in the console, so dragging the device never steals a slider.
+  const pointers = new Map<number, { x: number; y: number }>();
+  let lastDrag: { x: number; y: number } | null = null;
+  let pinchDistance = 0;
+  const pointerSpan = (): number => {
+    const values = [...pointers.values()];
+    if (values.length < 2) return 0;
+    return Math.hypot(
+      values[0]!.x - values[1]!.x,
+      values[0]!.y - values[1]!.y,
+    );
+  };
+
+  stage.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    stage.focus({ preventScroll: true });
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 1) {
+      lastDrag = { x: event.clientX, y: event.clientY };
+    } else {
+      lastDrag = null;
+      pinchDistance = pointerSpan();
+    }
+    stage.setPointerCapture?.(event.pointerId);
+  });
+
+  stage.addEventListener('pointermove', (event) => {
+    if (!pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size >= 2) {
+      const next = pointerSpan();
+      if (pinchDistance > 0 && next > 0) app?.zoomBy(pinchDistance / next);
+      pinchDistance = next;
+      return;
+    }
+    if (!lastDrag) return;
+    app?.orbitBy(
+      (event.clientX - lastDrag.x) * 0.006,
+      -(event.clientY - lastDrag.y) * 0.004,
+    );
+    lastDrag = { x: event.clientX, y: event.clientY };
+  });
+
+  const endPointer = (event: PointerEvent): void => {
+    pointers.delete(event.pointerId);
+    pinchDistance = 0;
+    if (pointers.size === 1) {
+      const [only] = [...pointers.values()];
+      lastDrag = only ? { ...only } : null;
+    } else {
+      lastDrag = null;
+    }
+  };
+  stage.addEventListener('pointerup', endPointer);
+  stage.addEventListener('pointercancel', endPointer);
+
+  stage.addEventListener(
+    'wheel',
+    (event) => {
+      event.preventDefault();
+      app?.zoomBy(Math.exp(event.deltaY * 0.0012));
+    },
+    { passive: false },
+  );
+
+  stage.addEventListener('keydown', (event) => {
+    const step = event.shiftKey ? 0.16 : 0.07;
+    switch (event.key) {
+      case 'ArrowLeft':
+        app?.orbitBy(-step, 0);
+        break;
+      case 'ArrowRight':
+        app?.orbitBy(step, 0);
+        break;
+      case 'ArrowUp':
+        app?.orbitBy(0, step * 0.7);
+        break;
+      case 'ArrowDown':
+        app?.orbitBy(0, -step * 0.7);
+        break;
+      case '+':
+      case '=':
+        app?.zoomBy(0.9);
+        break;
+      case '-':
+      case '_':
+        app?.zoomBy(1.1);
+        break;
+      case '0':
+        app?.resetOrbit();
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    announce('Camera orbit updated.');
+  });
 
   let scrollScheduled = false;
   const updateNav = (): void => {

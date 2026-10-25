@@ -67,9 +67,8 @@ export interface DuoAppSnapshot extends DuoState {
  *   return nothing; read the result through `getState()`.
  * - `captureScreenshot()` renders on demand and resolves a PNG blob.
  *
- * `setPreset` and the placeholder `setExploded` are recorded but not visually
- * applied yet; tickets 05 and 07 own those scene behaviours. Keeping them on
- * the facade now means the DOM does not have to change when they land.
+ * `setPreset` and `setExploded` are fully applied by the scene; their animation
+ * and restore behaviour is tested through this surface.
  */
 export interface DuoApp {
   mount(container: HTMLElement): void;
@@ -81,6 +80,10 @@ export interface DuoApp {
   setPreset(preset: PresetId): void;
   setExploded(exploded: boolean): void;
   setQuality(quality: QualityTierId): void;
+  orbitBy(azimuthDelta: number, elevationDelta: number): void;
+  zoomBy(factor: number): void;
+  resetOrbit(): void;
+  getOrbit(): { azimuth: number; elevation: number; zoom: number };
   captureScreenshot(): Promise<Blob | null>;
   /** Projected exploded-layer centres in stage-normalised coordinates. */
   getLayerAnchors(): readonly {
@@ -353,6 +356,22 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
     setQuality(quality: QualityTierId): void {
       if (!isQualityTierId(quality)) return;
       store.dispatch({ type: 'setQuality', value: quality });
+    },
+
+    orbitBy(azimuthDelta: number, elevationDelta: number): void {
+      studio?.orbitBy(azimuthDelta, elevationDelta);
+    },
+
+    zoomBy(factor: number): void {
+      studio?.zoomBy(factor);
+    },
+
+    resetOrbit(): void {
+      studio?.resetOrbit();
+    },
+
+    getOrbit(): { azimuth: number; elevation: number; zoom: number } {
+      return studio?.getOrbit() ?? { azimuth: 0, elevation: 0, zoom: 1 };
     },
 
     getLayerAnchors(): readonly {

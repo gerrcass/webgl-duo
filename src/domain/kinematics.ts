@@ -662,12 +662,12 @@ export type ExplodeLayerId = (typeof EXPLODE_LAYER_IDS)[number];
  * Values are metres, matching the rest of the module.
  */
 export const EXPLODE_LAYER_TRAVEL = {
-  'cover-glass': 0.03,
-  'inner-display': 0.016,
+  'cover-glass': 0.05,
+  'inner-display': 0.03,
   'chassis-hinge': 0,
-  battery: -0.016,
-  'rear-glass': -0.032,
-  'camera-module': -0.05,
+  battery: -0.032,
+  'rear-glass': -0.058,
+  'camera-module': -0.085,
 } as const satisfies Record<ExplodeLayerId, number>;
 
 /** Fraction of the timeline each layer waits before it starts moving. */

@@ -1712,3 +1712,40 @@ body[data-motion="off"] .scroll-cue__line::after {
     display: none;
   }
 }
+
+/* Exploded inspection: clear the hero copy so the six callouts own the left column. */
+body.is-exploded .hero__copy {
+  opacity: 0.06;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+body.is-exploded .stage-caption {
+  opacity: 0;
+}
+
+/* Let the hero copy pass drags through to the camera; only controls take input. */
+.hero__copy {
+  pointer-events: none;
+}
+.hero__copy a,
+.hero__copy button,
+.hero__copy input,
+.hero__copy select,
+.hero__copy label,
+.hero__copy .fold-control,
+.hero__copy .console {
+  pointer-events: auto;
+}
+
+.hero {
+  pointer-events: none;
+}
+.hero a,
+.hero button,
+.hero input,
+.hero select,
+.hero label,
+.hero .fold-control,
+.hero .console {
+  pointer-events: auto;
+}

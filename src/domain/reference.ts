@@ -338,7 +338,7 @@ export const reference = {
     {
       id: 'dusk',
       name: 'Dusk Titanium',
-      railTint: '#4b5060',
+      railTint: '#5a5f6e',
       rearGlass: '#2c3140',
       plateauTint: '#4d5363',
       accent: '#8b7dff',

@@ -310,6 +310,30 @@ top-centre camera bar. It sits 4.20 mm below the visible active top. Solving
 the layout this way keeps a real active panel, a real 0.55 mm cover glass and a
 real plateau; nothing overlaps a lit display with the camera island.
 
+### 11.6 Hardware layout and construction dimensions
+
+| Dimension | Value | Where |
+|---|---:|---|
+| Antenna bands per half | 5 | §4 |
+| Antenna band Y centres, from bottom | 22.0, 50.0, 78.0, 106.0, 134.0 mm | §4 |
+| Antenna band depth / relief | 4.0 / 0.012 mm | §4 |
+| Power / volume up / volume down centres | 116.0 / 101.25 / 89.25 mm | §6 |
+| Action / Camera Control centres | 112.0 / 60.0 mm | §6 |
+| USB-C tongue | 4.2 x 0.6 x 1.0 mm | §6 |
+| Gold contacts | 24 | §6 |
+| Speaker first offset / hole depth | 6.6 / 1.1 mm | §6 |
+| Microphone depth | 1.0 mm | §6 |
+| Lens bezel ring / barrel depth | 1.1 / 1.6 mm | §5 |
+| Lens elements / element inset | 6 / 0.28 mm | §5 |
+| Iris ratio / counterbore rim | 0.34 / 0.12 mm | §5 |
+| Flash warm ratio / recess / rim | 0.5 / 0.10 / 0.35 mm | §5 |
+| LiDAR recess / rings / rim | 0.15 mm / 18 / 0.35 mm | §5 |
+
+The rear mark is carried on the exposed rear glass of the left half because the
+right half's rear face is occupied by the cover display and plateau (§3.2/§11.5).
+All values above are construction dimensions added by Tickets 05-06; they are
+not independent product claims.
+
 ## 12. Revision log
 
 - 2026-10-24 — Reconciled §2 with the display and hinge sections: half body
@@ -351,3 +375,8 @@ real plateau; nothing overlaps a lit display with the camera island.
   known follow-up (it is not a geometry crack or a z-fighting artifact). The
   390 px hero fills more of the stage, but the device still overlaps the
   headline; the mobile composition needs another art-direction pass.
+
+- 2026-10-25 — Review fixes. Restored the sheet's Dusk rail tint (`#5a5f6e`),
+  documented the satin rail override in §4, added the missing §11.6 hardware
+  layout table, corrected the USB-C wall dimensions to millimetres, and removed
+  invented battery/camera claims from the exploded labels.

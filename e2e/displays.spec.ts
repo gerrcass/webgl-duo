@@ -127,7 +127,7 @@ test('the inner home screen is artwork, not a flat display, and survives the fol
   await mkdir(SHOT_DIR, { recursive: true });
 
   const hashes = new Set<number>();
-  for (const angle of [90, 158, 180] as const) {
+  for (const angle of [70, 90, 158, 180] as const) {
     await setFold(page, angle);
     const inner = await probeScreen(page, {
       x: 0.53,
@@ -147,6 +147,6 @@ test('the inner home screen is artwork, not a flat display, and survives the fol
 
   // Hashing the same region at three fold angles proves the panel+bridge
   // mapping changes with the rig without tearing into a flat frame.
-  expect(hashes.size).toBe(3);
+  expect(hashes.size).toBe(4);
   expect(errors).toEqual([]);
 });

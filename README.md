@@ -40,7 +40,7 @@ The studio console sits under the hero copy:
   and post-processing for frame rate.
 - **Capture still** — downloads the current canvas as a PNG.
 
-URL flags for reproducible inspection: `?test=1` disables intro motion, locks the
+URL flags for reproducible inspection: `?test=1` disables intro motion, starts in a fixed
 fold angle and colourway, and fixes the camera for deterministic evidence;
 `?fallback=1` shows the designed poster used when WebGL2 is unavailable.
 
@@ -96,7 +96,7 @@ uploads them as artifacts):
 | `exploded.png` | Labelled exploded assembly |
 | `colourways.png` | Four-finish comparison |
 
-Every shot comes from `?test=1`, so it is motion-free and independent of timing.
+Every shot comes from `?test=1`, so it is motion-free; the evidence suite drives explicit deterministic states and waits for a settled frame rather than a wall-clock delay.
 
 ## Run it locally
 

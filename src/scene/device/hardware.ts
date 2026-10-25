@@ -341,8 +341,8 @@ function buildUsbC(
   group.name = 'usb-c';
 
   const outer = createRoundedRectShape(port.width, port.height, roundedRadii(port.width, port.height, 1.2));
-  const innerW = port.width - 0.7;
-  const innerH = port.height - 0.7;
+  const innerW = port.width - mm(0.7);
+  const innerH = port.height - mm(0.7);
   const inner = createRoundedRectShape(innerW, innerH, roundedRadii(innerW, innerH, 1.0));
   outer.holes.push(inner);
 
@@ -394,7 +394,7 @@ function buildUsbC(
     const y =
       row === 0
         ? tongue.thickness / 2 + mm(0.02)
-        : tongue.thickness / 2 + mm(0.03) + tongue.thickness - 0.02;
+        : tongue.thickness / 2 + mm(0.03) + tongue.thickness - mm(0.02);
     matrix.makeTranslation(x, y, port.z);
     contacts.setMatrixAt(index, matrix);
   }

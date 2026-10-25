@@ -85,6 +85,10 @@ export class StudioScene {
   private exploded = false;
   private cameraPose: CameraPose | null = null;
   private lastElapsedSeconds = 0;
+  /** User orbit/zoom offsets, applied on top of the art-directed preset. */
+  private orbitAzimuth = 0;
+  private orbitElevation = 0;
+  private orbitZoom = 1;
 
   constructor(
     renderer: WebGLRenderer,
@@ -156,7 +160,11 @@ export class StudioScene {
   }
 
   applyState(state: DuoState): void {
-    this.preset = this.detailView ? 'detail' : state.preset;
+    const nextPreset = this.detailView ? 'detail' : state.preset;
+    if (nextPreset !== this.preset || state.exploded !== this.exploded) {
+      this.resetOrbit();
+    }
+    this.preset = nextPreset;
     this.exploded = state.exploded;
     if (this.detailView) {
       // Ticket 06 evidence: open flat, rear facing the camera, macro framing.
@@ -176,6 +184,36 @@ export class StudioScene {
     // half instead. When open, the rear view shows both outer faces.
     this.device.object.rotation.y =
       this.rearView && state.foldAngle > 1 ? Math.PI : 0;
+  }
+
+  orbitBy(azimuthDelta: number, elevationDelta: number): void {
+    const clamp = (value: number, min: number, max: number): number =>
+      Math.min(max, Math.max(min, value));
+    this.orbitAzimuth = clamp(this.orbitAzimuth + azimuthDelta, -1.2, 1.2);
+    this.orbitElevation = clamp(
+      this.orbitElevation + elevationDelta,
+      -0.45,
+      0.8,
+    );
+  }
+
+  zoomBy(factor: number): void {
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    this.orbitZoom = Math.min(1.8, Math.max(0.55, this.orbitZoom * factor));
+  }
+
+  resetOrbit(): void {
+    this.orbitAzimuth = 0;
+    this.orbitElevation = 0;
+    this.orbitZoom = 1;
+  }
+
+  getOrbit(): { azimuth: number; elevation: number; zoom: number } {
+    return {
+      azimuth: this.orbitAzimuth,
+      elevation: this.orbitElevation,
+      zoom: this.orbitZoom,
+    };
   }
 
   setViewport(width: number, height: number): void {
@@ -240,10 +278,20 @@ export class StudioScene {
         ? Math.sin(elapsedSeconds * 0.17 + 0.8) * 0.002
         : 0;
 
+    const clamp = (value: number, min: number, max: number): number =>
+      Math.min(max, Math.max(min, value));
     const target: CameraPose = {
-      azimuthRadians: framing.azimuthRadians + idleAzimuth,
-      elevationRadians: framing.elevationRadians + idleElevation,
-      distance: framing.distance,
+      azimuthRadians: framing.azimuthRadians + idleAzimuth + this.orbitAzimuth,
+      elevationRadians: clamp(
+        framing.elevationRadians + idleElevation + this.orbitElevation,
+        -0.4,
+        0.85,
+      ),
+      distance: clamp(
+        framing.distance * this.orbitZoom,
+        reference.camera.orbitMin,
+        2.0,
+      ),
       target: framing.target,
       fovDegrees: framing.fovDegrees,
     };
@@ -288,15 +336,15 @@ export class StudioScene {
   /** Exploded diagram: open flat and a low, near-side view that fans the layers. */
   private computeExplodedFraming(): ReturnType<typeof computeHeroFraming> {
     const halfFovTan = Math.tan((HERO_FOV_DEGREES * Math.PI) / 360);
-    const distance = 1.15;
+    const distance = 1.05;
     const visibleHeight = 2 * distance * halfFovTan;
     const aspect = this.viewportWidth / this.viewportHeight;
     return {
       aspect,
       fovDegrees: HERO_FOV_DEGREES,
       distance,
-      azimuthRadians: 0.62,
-      elevationRadians: 0.15,
+      azimuthRadians: 1.28,
+      elevationRadians: 0.06,
       target: {
         x: this.viewportWidth > 800 ? 0.03 : 0,
         y: reference.envelope.height / 2,
