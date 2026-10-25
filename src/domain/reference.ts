@@ -50,6 +50,14 @@ export const reference = {
     displayEdgeSide: mm(2.0),
     displayEdgeTopBottom: mm(1.9),
     coverGlassThickness: mm(0.55),
+    /**
+     * §11 effective stack. The rail lands register at 2 × 5.20 = 10.40 mm; the
+     * display surface sits 0.14 mm behind each rail land so the facing displays
+     * clear by 0.28 mm when closed.
+     */
+    displayRecess: mm(0.14),
+    /** Visible titanium rail width around the front/rear glass. */
+    glassInset: mm(1.2),
   },
 
   /** §7 Hinge mechanics */
@@ -66,6 +74,9 @@ export const reference = {
     maxFoldAngleDegrees: 180,
     gasketRoughness: ratio(0.85),
     gasketMetalness: ratio(0),
+    /** §7/§11 visible shell wall and the display channel cut into the spine. */
+    barrelWall: mm(0.6),
+    barrelDisplayOpeningDegrees: 24,
   },
 
   /** §3.1 Inner display */
@@ -152,6 +163,8 @@ export const reference = {
     raise: mm(1.95),
     chamfer: mm(0.45),
     roughness: ratio(0.32),
+    /** Placement: centred on the right half, 8.0 mm below the top edge. */
+    topInset: mm(8.0),
   },
 
   /** §5 Camera system. Positions are from the plateau centre, in plate axes. */

@@ -9,7 +9,7 @@ import {
 describe('Duo store', () => {
   it('starts with the documented presentation state', () => {
     expect(INITIAL_DUO_STATE).toEqual({
-      foldAngle: 0,
+      foldAngle: 158,
       colourway: 'dusk',
       preset: 'hero',
       exploded: false,
@@ -55,7 +55,7 @@ describe('Duo store', () => {
     );
 
     expect(state).toEqual({
-      foldAngle: 0,
+      foldAngle: 158,
       colourway: 'bloom',
       preset: 'profile',
       exploded: true,
@@ -64,7 +64,7 @@ describe('Duo store', () => {
   });
 
   it('returns a new object only when something changed', () => {
-    const same = reduceDuoState(INITIAL_DUO_STATE, { type: 'setFoldAngle', value: 0 });
+    const same = reduceDuoState(INITIAL_DUO_STATE, { type: 'setFoldAngle', value: 158 });
     const acted = reduceDuoState(INITIAL_DUO_STATE, { type: 'setFoldAngle', value: 30 });
 
     expect(same).toBe(INITIAL_DUO_STATE);

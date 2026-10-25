@@ -186,6 +186,77 @@ The hinge barrel diameter is fixed at 7.40 mm by §7; the open and registered
 display dimensions are fixed by §3.1. The half width is therefore derived, not
 independently invented.
 
+### 11.1 Closed register and the 0.28 mm clearance
+
+The three sheet numbers 5.20 mm body depth, 0.28 mm closed gap and 10.40 mm
+closed depth do not sum as 5.20 + 0.28 + 5.20 = 10.68 mm. The 10.40 mm envelope
+is the **rail-to-rail register**, so the 0.28 mm cannot be an air gap added
+between two full-depth bodies. The honest relation is:
+
+| Quantity | Value | Meaning |
+|---|---:|---|
+| Rail half depth | 5.20 | rail land to rear face |
+| Display recess | 0.14 | display surface behind its rail land |
+| Closed register | 2 × 5.20 = 10.40 | rail lands in contact |
+| Display clearance | 2 × 0.14 = 0.28 | facing display surfaces at the free edge |
+
+The free-edge rails are the mechanical stop. Each display is recessed 0.14 mm
+below its rail lip, so the two displays meet the sheet's 0.28 mm clearance while
+the outer envelope stays exactly 10.40 mm. The 12.35 mm plateau case is
+10.40 + 1.95, measured from the rear rail face; the rear glass is flush with
+that face. A closed stack of 10.68 mm is therefore not this design.
+
+### 11.2 Hinge spine
+
+A 7.40 mm full cylinder cannot fit inside a 5.20 mm half body without protruding
+in front of the inner display. The spine is therefore **two half-barrel shells**
+(one per half) that share the fold axis and occupy the rear of the barrel only:
+
+- Each shell is a 7.40 mm outer-diameter, 0.60 mm-wall, 148.0 mm-long arc with
+  annular end caps. The 0.20 mm seam is the gap between the two shells at the
+  rearmost point.
+- The front of the barrel is the **display channel** (a 24° opening at each side
+  of the fold), so the open device keeps its 5.20 mm body depth and 7.15 mm
+  plateau depth.
+- When the halves close, the two shells rotate around the shared axis and the
+  assembled barrel sits inside the 10.40 mm closed envelope; the closed
+  silhouette outside the barrel is the two rail stacks and the spine edge.
+
+### 11.3 Display bridge
+
+The inner display is split at the fold into two rigid panels with inner edges
+5.00 mm from the fold axis; the 10.0 mm bridge spans between them. The bridge
+centreline is a constant-developed-length C1 cubic strip tangent to both panels.
+The solver holds exactly 10.00 mm at every angle (asserted at 0°, 90°, 158° and
+180°). Its solved minimum radius of curvature is:
+
+| Fold | 30° | 60° | 90° | 158° | 180° |
+|---|---:|---:|---:|---:|---:|
+| Minimum radius (mm) | 4.69 | 1.50 | 0.67 | 0.05 | 0.006 |
+
+The 1.8 mm figure in §7 is the nominal crease radius; it is met while the bridge
+is a broad arc (about 30°) and is exceeded by the fixed 10.0 mm length as the
+rigid panel edges converge. At 180° the strip is a constant-length hairpin
+between two panels 0.28 mm apart, not a stretched 1.8 mm arc. The mechanical
+constraint that is preserved is the developed length; ticket 05 turns the
+hairpin into the soft optical crease with the crease shader. A future waterdrop
+hinge that dives at the panel edge (rather than staying tangent) is the route to
+a 1.8 mm radius at full closure; it would need a new sheet dimension for the
+dive angle.
+
+### 11.4 Construction dimensions added by the hinge ticket
+
+| Dimension | Value | Where |
+|---|---:|---|
+| Display recess | 0.14 | §2, §11.1 |
+| Front glass inset from outer outline | 1.20 | §2 |
+| Barrel shell wall | 0.60 | §7 |
+| Barrel display-channel opening | 24° total | §7 |
+| Plateau top inset | 8.00 | §5 |
+
+The bridge anchor at 5.00 mm is derived from the 10.0 mm bridge, not a new
+number. The plateau centre is derived from the half width and the top inset.
+
 ## 12. Revision log
 
 - 2026-10-24 — Reconciled §2 with the display and hinge sections: half body
@@ -196,3 +267,13 @@ independently invented.
   85 mm equivalent lens at 0.42 m sees 119 mm vertically and cannot frame the
   150.40 mm envelope. At 0.72 m the envelope fills 74% of the frame height,
   leaving the studio margin used by the hero composition.
+- 2026-10-25 — Hinge ticket. Resolved the 5.20 + 0.28 + 5.20 ≠ 10.40 conflict
+  with the §11.1 effective stack: the rail lands register at 10.40 mm and a
+  0.14 mm display recess per half yields the 0.28 mm free-edge display
+  clearance. Replaced the "full barrel" reading of §7 with the two rear
+  half-barrel shells and a display channel, because a 7.40 mm cylinder cannot
+  fit inside a 5.20 mm body. Added the bridge solver's honest radius table
+  (§11.3): the 10.0 mm developed length is preserved, the nominal 1.8 mm radius
+  is not achievable at full closure. Added the construction dimensions in
+  §11.4. The hero default is the sheet's 158° presentation angle and the page
+  now exposes a 0–180° fold control with detents at 30/60/90/120/150.
