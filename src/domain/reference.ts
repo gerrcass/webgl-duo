@@ -133,14 +133,16 @@ export const reference = {
   /** §4 Frame and surfaces */
   frame: {
     rail: {
-      roughness: ratio(0.34),
-      clearcoat: ratio(0.04),
-      anisotropy: ratio(0.65),
+      roughness: ratio(0.5),
+      clearcoat: ratio(0.015),
+      anisotropy: ratio(0.3),
       /** Brushing runs along the long (Y) axis, so the highlight is rotated 90°. */
       anisotropyRotationDegrees: 90,
-      metalness: ratio(1),
-      envMapIntensity: 0.62,
-      brushedRoughnessContrast: ratio(0.16),
+      metalness: ratio(0.92),
+      envMapIntensity: 0.3,
+      brushedRoughnessContrast: ratio(0.12),
+      /** Art direction: a darker brushed finish, not a chrome outline. */
+      tintGain: ratio(0.65),
     },
     frontGlass: {
       roughness: ratio(0.045),
@@ -375,7 +377,7 @@ export const reference = {
       height: 0.8,
       color: '#ffd9b8',
     },
-    exposure: 1.0,
+    exposure: 0.75,
     /** Display whites are held at 0.92 of clipping rather than at 1.0. */
     displayWhiteLuminance: 0.92,
   },

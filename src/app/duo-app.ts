@@ -10,6 +10,7 @@ import {
   type DuoState,
   type PresetId,
 } from '../domain/store';
+import type { ExplodeLayerId } from '../domain/kinematics';
 import { createStudioRenderer, isWebGL2Available } from '../scene/renderer';
 import { StudioScene } from '../scene/studio';
 import type { WebGLRenderer } from 'three';
@@ -81,6 +82,13 @@ export interface DuoApp {
   setExploded(exploded: boolean): void;
   setQuality(quality: QualityTierId): void;
   captureScreenshot(): Promise<Blob | null>;
+  /** Projected exploded-layer centres in stage-normalised coordinates. */
+  getLayerAnchors(): readonly {
+    id: ExplodeLayerId;
+    x: number;
+    y: number;
+    visible: boolean;
+  }[];
   /** Renderer counters from the most recent frame, for the evidence log. */
   getPerformance(): PerformanceStats;
 }
@@ -345,6 +353,16 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
     setQuality(quality: QualityTierId): void {
       if (!isQualityTierId(quality)) return;
       store.dispatch({ type: 'setQuality', value: quality });
+    },
+
+    getLayerAnchors(): readonly {
+      id: ExplodeLayerId;
+      x: number;
+      y: number;
+      visible: boolean;
+    }[] {
+      if (!studio) return [];
+      return studio.getLayerAnchors();
     },
 
     getPerformance(): PerformanceStats {

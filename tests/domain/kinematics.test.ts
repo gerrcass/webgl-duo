@@ -183,12 +183,43 @@ describe('hinge kinematics', () => {
     expect(foldSolution(Number.NaN).foldAngle).toBe(0);
   });
 
-  it('returns every explode offset to zero for the placeholder animation', () => {
-    for (const offset of explodeOffsets(false)) {
-      expect(offset).toEqual({ x: 0, y: 0, z: 0 });
+  it('separates six layers along the device normal when fully exploded', () => {
+    const assembled = explodeOffsets(0);
+    const exploded = explodeOffsets(1);
+
+    expect(assembled).toHaveLength(6);
+    expect(exploded).toHaveLength(6);
+    for (const offset of assembled) {
+      expect(offset.x).toBe(0);
+      expect(offset.y).toBe(0);
+      expect(offset.z).toBeCloseTo(0, 12);
     }
-    for (const offset of explodeOffsets(true)) {
-      expect(offset).toEqual({ x: 0, y: 0, z: 0 });
+
+    // Front glass leads, the chassis is the datum, the camera module trails.
+    expect(exploded[0]!.z).toBeGreaterThan(exploded[1]!.z);
+    expect(exploded[2]!.z).toBeCloseTo(0, 12);
+    expect(exploded[3]!.z).toBeLessThan(0);
+    expect(exploded[4]!.z).toBeLessThan(exploded[3]!.z);
+    expect(exploded[5]!.z).toBeLessThan(exploded[4]!.z);
+
+    for (const offset of exploded) {
+      expect(offset.x).toBe(0);
+      expect(offset.y).toBe(0);
     }
+  });
+
+  it('staggers the explode motion and clamps progress', () => {
+    const early = explodeOffsets(0.2);
+    const late = explodeOffsets(0.9);
+    expect(early[0]!.z).toBeGreaterThan(early[5]!.z);
+    expect(Math.abs(late[0]!.z)).toBeGreaterThan(Math.abs(early[0]!.z));
+    expect(explodeOffsets(-1)).toEqual(explodeOffsets(0));
+    expect(explodeOffsets(4)).toEqual(explodeOffsets(1));
+    expect(explodeOffsets(Number.NaN)).toEqual(explodeOffsets(0));
+  });
+
+  it('staggered explosion keeps the chassis fixed', () => {
+    const half = explodeOffsets(0.5);
+    expect(half[2]).toEqual({ x: 0, y: 0, z: 0 });
   });
 });

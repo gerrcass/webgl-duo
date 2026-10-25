@@ -641,15 +641,61 @@ export function closestRigDistance(
 }
 
 /**
- * Six layer offsets for the exploded view. Ticket 07 owns the animation; this
- * ticket only guarantees that the contract exists and is exactly zero.
+ * The six layers of the exploded view, ordered from the inner (front) face to
+ * the rear face. The ids are the stable contract between the domain, the scene
+ * and the label overlay.
  */
-export function explodeOffsets(
-  _exploded: boolean,
-): readonly Point3[] {
+export const EXPLODE_LAYER_IDS = [
+  'cover-glass',
+  'inner-display',
+  'chassis-hinge',
+  'battery',
+  'rear-glass',
+  'camera-module',
+] as const;
+
+export type ExplodeLayerId = (typeof EXPLODE_LAYER_IDS)[number];
+
+/**
+ * Separation along the device normal (+z is the inner display face). The
+ * chassis is the datum and never moves, so both halves keep their hinge rig.
+ * Values are metres, matching the rest of the module.
+ */
+export const EXPLODE_LAYER_TRAVEL = {
+  'cover-glass': 0.03,
+  'inner-display': 0.016,
+  'chassis-hinge': 0,
+  battery: -0.016,
+  'rear-glass': -0.032,
+  'camera-module': -0.05,
+} as const satisfies Record<ExplodeLayerId, number>;
+
+/** Fraction of the timeline each layer waits before it starts moving. */
+const EXPLODE_STAGGER = 0.055;
+/** Fraction of the timeline a single layer spends travelling. */
+const EXPLODE_TRAVEL_SPAN = 0.7;
+
+const easeInOutCubic = (value: number): number => {
+  const t = Math.min(1, Math.max(0, value));
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+};
+
+/**
+ * Eased, staggered offsets for `progress` in 0 (assembled) … 1 (separated).
+ * The six entries follow `EXPLODE_LAYER_IDS`. Offsets are pure data so the
+ * restore contract can be tested without a GPU: at 0 every layer is exactly
+ * zero, which is what exiting the exploded view applies.
+ */
+export function explodeOffsets(progress: number): readonly Point3[] {
+  const clamped = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
   return Object.freeze(
-    Array.from({ length: 6 }, () =>
-      Object.freeze({ x: 0, y: 0, z: 0 }),
-    ),
+    EXPLODE_LAYER_IDS.map((id, index) => {
+      const delay = index * EXPLODE_STAGGER;
+      const local = easeInOutCubic(
+        (clamped - delay) / EXPLODE_TRAVEL_SPAN,
+      );
+      const z = EXPLODE_LAYER_TRAVEL[id] * local;
+      return Object.freeze({ x: 0, y: 0, z });
+    }),
   );
 }

@@ -90,6 +90,22 @@ describe('Duo store', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it('restores the presentation state exactly when the exploded view closes', () => {
+    const before = {
+      ...INITIAL_DUO_STATE,
+      foldAngle: 90,
+      colourway: 'bloom' as const,
+      preset: 'detail' as const,
+    };
+    const exploded = reduceDuoState(before, { type: 'setExploded', value: true });
+    const restored = reduceDuoState(exploded, { type: 'setExploded', value: false });
+
+    expect(restored).toEqual({ ...before, exploded: false });
+    expect(restored.foldAngle).toBe(before.foldAngle);
+    expect(restored.colourway).toBe(before.colourway);
+    expect(restored.preset).toBe(before.preset);
+  });
+
   it('hands out snapshots that cannot mutate the store', () => {
     const store = createDuoStore();
     const snapshot = store.getState();

@@ -6,6 +6,11 @@ import {
 } from '../domain/reference';
 import { QUALITY_IDS, QUALITY_TIERS } from '../domain/quality';
 import { createDuoApp, type DuoApp, type DuoAppSnapshot } from './duo-app';
+import { PRESET_IDS, type PresetId } from '../domain/store';
+import {
+  EXPLODE_LAYER_IDS,
+  type ExplodeLayerId,
+} from '../domain/kinematics';
 import {
   DISCLAIMER,
   describeFold,
@@ -69,6 +74,9 @@ export function boot(): void {
   const qualitySelect = requireElement<HTMLSelectElement>('[data-ref="quality"]');
   const qualityHint = requireElement<HTMLElement>('[data-ref="quality-hint"]');
   const screenshotButton = requireElement<HTMLButtonElement>('[data-ref="screenshot"]');
+  const presetRow = requireElement<HTMLElement>('[data-ref="preset-row"]');
+  const explodedButton = requireElement<HTMLButtonElement>('[data-ref="exploded"]');
+  const explodeLabels = requireElement<HTMLElement>('[data-ref="explode-labels"]');
 
   requireElement<HTMLElement>('[data-ref="hero-meta"]').textContent = heroMeta();
   stageCaptionElement.textContent = stageCaption(
@@ -116,6 +124,51 @@ export function boot(): void {
       option.value = id;
       option.textContent = QUALITY_TIERS[id].label;
       return option;
+    }),
+  );
+
+  const PRESET_COPY: Record<PresetId, string> = {
+    hero: 'Hero',
+    profile: 'Profile',
+    detail: 'Detail',
+  };
+  const presetButtons = new Map<PresetId, HTMLButtonElement>();
+  presetRow.append(
+    ...PRESET_IDS.map((preset) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preset';
+      button.dataset.preset = preset;
+      button.textContent = PRESET_COPY[preset];
+      button.setAttribute('aria-pressed', String(preset === 'hero'));
+      presetButtons.set(preset, button);
+      return button;
+    }),
+  );
+
+  const LABEL_COPY: Record<ExplodeLayerId, { name: string; detail: string }> = {
+    'cover-glass': { name: 'Cover glass', detail: 'Ceramic shield · 0.34 mm recess' },
+    'inner-display': { name: 'Inner display', detail: '7.78 in · 10 mm bridge' },
+    'chassis-hinge': { name: 'Chassis & hinge', detail: 'Titanium · 148 mm spine' },
+    battery: { name: 'Battery', detail: 'Dual-cell · 4 800 mAh' },
+    'rear-glass': { name: 'Rear glass', detail: 'Matte · orange-peel' },
+    'camera-module': { name: 'Camera module', detail: '48 MP · 57 mm plateau' },
+  };
+  const labelNodes = new Map<ExplodeLayerId, HTMLElement>();
+  explodeLabels.append(
+    ...EXPLODE_LAYER_IDS.map((id) => {
+      const item = document.createElement('div');
+      item.className = 'explode-label';
+      item.dataset.layer = id;
+      const name = document.createElement('span');
+      name.className = 'explode-label__name';
+      name.textContent = LABEL_COPY[id].name;
+      const detail = document.createElement('span');
+      detail.className = 'explode-label__detail';
+      detail.textContent = LABEL_COPY[id].detail;
+      item.append(name, detail);
+      labelNodes.set(id, item);
+      return item;
     }),
   );
 
@@ -203,6 +256,77 @@ export function boot(): void {
     qualityHint.textContent = QUALITY_TIERS[snapshot.quality].description;
   };
 
+  let labelFrame = 0;
+
+  const positionExplodeLabels = (): void => {
+    if (!app) return;
+    const anchors = app.getLayerAnchors();
+    const stageBox = stage.getBoundingClientRect();
+    const columns: Array<Array<{ id: ExplodeLayerId; y: number }>> = [[], []];
+    for (const [index, id] of EXPLODE_LAYER_IDS.entries()) {
+      const anchor = anchors.find((candidate) => candidate.id === id);
+      if (!anchor) continue;
+      columns[index < 3 ? 0 : 1]!.push({ id, y: anchor.y });
+    }
+    for (const column of columns) {
+      column.sort((a, b) => a.y - b.y);
+      let previous = Number.NEGATIVE_INFINITY;
+      for (const item of column) {
+        const node = labelNodes.get(item.id);
+        if (!node) continue;
+        let top = stageBox.top + 18 + item.y * (stageBox.height - 36);
+        top = Math.max(top, previous + 44);
+        top = Math.min(top, stageBox.bottom - 18);
+        previous = top;
+        const onLeft = columns[0] === column;
+        node.style.left = `${stageBox.left + 12}px`;
+        node.style.top = `${top}px`;
+        node.style.setProperty('--leader', onLeft ? 'right' : 'left');
+      }
+    }
+    // Pin the columns to the stage's outer margins, not to the layer's x, so
+    // callouts never sit on top of the device.
+    for (const [index, id] of EXPLODE_LAYER_IDS.entries()) {
+      const node = labelNodes.get(id);
+      if (!node) continue;
+      const width = node.offsetWidth || 150;
+      node.style.left =
+        index < 3
+          ? `${stageBox.left + 16}px`
+          : `${stageBox.right - 16 - width}px`;
+    }
+  };
+
+  const stopLabelLoop = (): void => {
+    if (labelFrame) cancelAnimationFrame(labelFrame);
+    labelFrame = 0;
+  };
+
+  const startLabelLoop = (): void => {
+    if (labelFrame) return;
+    const step = (): void => {
+      positionExplodeLabels();
+      labelFrame = requestAnimationFrame(step);
+    };
+    step();
+  };
+
+  const syncPresetControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    for (const [preset, button] of presetButtons) {
+      button.setAttribute('aria-pressed', String(preset === snapshot.preset));
+    }
+  };
+
+  const syncExplodedControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    explodedButton.setAttribute('aria-pressed', String(snapshot.exploded));
+    explodeLabels.hidden = !snapshot.exploded;
+    if (snapshot.exploded) {
+      startLabelLoop();
+    } else {
+      stopLabelLoop();
+    }
+  };
+
   const snapToDetent = (value: number): number => {
     for (const detent of reference.hinge.detentsDegrees) {
       if (Math.abs(value - detent) <= 2) return detent;
@@ -223,6 +347,8 @@ export function boot(): void {
     syncFoldControl(snapshot);
     syncColourControl(snapshot);
     syncQualityControl(snapshot);
+    syncPresetControl(snapshot);
+    syncExplodedControl(snapshot);
     applyAccent(snapshot.colourway);
 
     if (snapshot.status === 'fallback') {
@@ -313,6 +439,23 @@ export function boot(): void {
       announce(`${name} finish selected. The device and interface accent updated.`);
     });
   }
+
+  for (const [preset, button] of presetButtons) {
+    button.addEventListener('click', () => {
+      app?.setPreset(preset);
+      announce(`${PRESET_COPY[preset]} camera preset selected.`);
+    });
+  }
+
+  explodedButton.addEventListener('click', () => {
+    const next = !(app?.getState().exploded ?? false);
+    app?.setExploded(next);
+    announce(
+      next
+        ? 'Exploded view: six layers separated. Fold, finish and camera will be restored on exit.'
+        : 'Exploded view closed. The previous fold, finish and camera pose are restored.',
+    );
+  });
 
   qualitySelect.addEventListener('change', () => {
     app?.setQuality(qualitySelect.value as (typeof QUALITY_IDS)[number]);
