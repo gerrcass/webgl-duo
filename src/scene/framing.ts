@@ -11,6 +11,7 @@
  */
 
 import { reference } from '../domain/reference';
+import type { PresetId } from '../domain/store';
 
 export interface Viewport {
   readonly width: number;
@@ -57,6 +58,15 @@ const COMPOSITION = {
   /** Three-quarter view: camera to the right and slightly above the device. */
   azimuthRadians: 0.3,
   elevationRadians: 0.1,
+  /** Profile is a side silhouette: nearly edge-on, camera slightly below eye. */
+  profileAzimuthRadians: 1.2,
+  profileElevationRadians: 0.045,
+  /** Detail is a macro on the camera plateau and the top rail. */
+  detailAzimuthRadians: 2.55,
+  detailElevationRadians: 0.24,
+  detailDistance: 0.3,
+  /** The plateau's approximate world centre at the presentation fold. */
+  detailTarget: { x: 0.034, y: 0.117, z: -0.012 },
   /** Below this aspect the layout is stacked and the framing becomes portrait. */
   portraitAspectThreshold: 0.95,
 } as const;
@@ -137,6 +147,72 @@ export function computeHeroFraming(
       COMPOSITION.elevationRadians + (introEase - 1) * 0.018,
     target: { x: targetX, y: targetY, z: 0 },
     visibleWidth,
+    visibleHeight,
+  };
+}
+
+export interface CameraPose {
+  readonly azimuthRadians: number;
+  readonly elevationRadians: number;
+  readonly distance: number;
+  readonly target: HeroFraming['target'];
+  readonly fovDegrees: number;
+}
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
+
+/**
+ * The art-directed camera pose for a stored preset. Hero is the product shot;
+ * profile turns almost edge-on so the hinge reads as a silhouette; detail is a
+ * macro on the camera plateau and the top rail. Every pose stays inside the
+ * sheet's orbit envelope so a later user orbit can take over without a jump.
+ */
+export function computePresetFraming(
+  viewport: Viewport,
+  preset: PresetId,
+  introProgress = 1,
+): HeroFraming {
+  const hero = computeHeroFraming(viewport, preset === 'hero' ? introProgress : 1);
+  if (preset === 'hero') return hero;
+
+  const aspect = hero.aspect;
+  const halfFovTan = Math.tan((HERO_FOV_DEGREES * Math.PI) / 360);
+
+  if (preset === 'profile') {
+    // Side silhouette: fit the full height rather than the open width, then
+    // clamp into the 0.28–0.72 m orbit range.
+    const fitHeight = reference.envelope.height / 0.72 / (2 * halfFovTan);
+    const distance = clamp(fitHeight, reference.camera.orbitMin, reference.camera.orbitMax);
+    const visibleHeight = 2 * distance * halfFovTan;
+    return {
+      ...hero,
+      distance,
+      azimuthRadians: COMPOSITION.profileAzimuthRadians,
+      elevationRadians: COMPOSITION.profileElevationRadians,
+      target: {
+        x: hero.target.x,
+        y: reference.envelope.height / 2,
+        z: 0,
+      },
+      visibleWidth: visibleHeight * aspect,
+      visibleHeight,
+    };
+  }
+
+  const distance = clamp(
+    COMPOSITION.detailDistance,
+    reference.camera.orbitMin,
+    reference.camera.orbitMax,
+  );
+  const visibleHeight = 2 * distance * halfFovTan;
+  return {
+    ...hero,
+    distance,
+    azimuthRadians: COMPOSITION.detailAzimuthRadians,
+    elevationRadians: COMPOSITION.detailElevationRadians,
+    target: { ...COMPOSITION.detailTarget },
+    visibleWidth: visibleHeight * aspect,
     visibleHeight,
   };
 }

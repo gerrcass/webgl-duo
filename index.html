@@ -115,6 +115,24 @@
             </fieldset>
 
             <div class="console__row">
+              <span class="console__label" id="preset-label">Camera</span>
+              <div class="preset-row" data-ref="preset-row" role="group" aria-labelledby="preset-label"></div>
+            </div>
+
+            <div class="console__row console__row--split">
+              <span class="console__label">View</span>
+              <button
+                class="console__toggle"
+                type="button"
+                data-ref="exploded"
+                aria-pressed="false"
+              >
+                <span class="console__toggle-dot" aria-hidden="true"></span>
+                Exploded view
+              </button>
+            </div>
+
+            <div class="console__row">
               <label class="console__label" for="quality-tier">Render quality</label>
               <div class="console__select">
                 <select id="quality-tier" data-ref="quality" aria-describedby="quality-hint"></select>
@@ -135,6 +153,8 @@
         </div>
         <p class="hero__caption" data-ref="stage-caption" aria-hidden="true"></p>
       </section>
+
+      <div class="explode-labels" data-ref="explode-labels" aria-hidden="true" hidden></div>
 
       <section class="design" id="design" aria-labelledby="design-title">
         <div class="section__inner design__grid">

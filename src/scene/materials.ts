@@ -72,7 +72,7 @@ export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
     new MeshPhysicalMaterial(parameters);
 
   const rail = physical({
-    color: palette.railTint,
+    color: new Color(palette.railTint).multiplyScalar(reference.frame.rail.tintGain),
     metalness: reference.frame.rail.metalness,
     roughness: reference.frame.rail.roughness,
     clearcoat: reference.frame.rail.clearcoat,

@@ -1,5 +1,6 @@
 import {
   BoxGeometry,
+  Box3,
   BufferGeometry,
   CanvasTexture,
   DynamicDrawUsage,
@@ -8,6 +9,7 @@ import {
   Group,
   Mesh,
   MeshPhysicalMaterial,
+  Vector3,
   type Texture,
 } from 'three';
 import {
@@ -16,9 +18,12 @@ import {
   type ColourwayId,
 } from '../../domain/reference';
 import {
+  EXPLODE_LAYER_IDS,
   HINGE_SHELLS,
+  explodeOffsets,
   foldSolution,
   type BridgeSolution,
+  type ExplodeLayerId,
   type HingeShell,
 } from '../../domain/kinematics';
 import {
@@ -111,8 +116,15 @@ const COVER_RADII: CornerRadii = [
  */
 const PANEL_LIFT = 0.00005;
 const BRIDGE_LIFT = PANEL_LIFT;
+/**
+ * Art direction: the glass sits another 0.2 mm below the rail lip than the
+ * mechanical sheet requires, so the dark bezel ring reads as a gasket rather
+ * than as a bright coincident edge.
+ */
+const GLASS_EXTRA_RECESS = 0.0002;
 
-const INNER_PANEL_Z = -reference.body.displayRecess + PANEL_LIFT;
+const INNER_PANEL_Z =
+  -reference.body.displayRecess - GLASS_EXTRA_RECESS + PANEL_LIFT;
 const INNER_GLASS_Z = INNER_PANEL_Z + reference.display.innerGlassGap;
 const COVER_PANEL_Z = -reference.envelope.bodyDepth - reference.display.surfaceClearance;
 const COVER_GLASS_Z = COVER_PANEL_Z - reference.coverDisplay.coverGlassThickness;
@@ -161,6 +173,11 @@ export class DuoDevice implements DuoDeviceModel {
   private readonly coverGlassMaterial: MeshPhysicalMaterial;
   private readonly innerTexture: CanvasTexture;
   private readonly coverTexture: CanvasTexture;
+  private readonly layerGroups = new Map<ExplodeLayerId, Group[]>();
+  private explodeTarget = 0;
+  private explodeProgress = 0;
+  private explodeApplied = -1;
+  private lastUpdateSeconds = 0;
 
   constructor(colourway: ColourwayId = reference.identity.defaultColourway) {
     const palette = resolveColourway(colourway);
@@ -217,7 +234,10 @@ export class DuoDevice implements DuoDeviceModel {
       GLASS_PLATE_HEIGHT,
       GLASS_PLATE_RADII,
     );
-    const frontGlass = this.plate(glassShape, -reference.body.displayRecess);
+    const frontGlass = this.plate(
+      glassShape,
+      -reference.body.displayRecess - GLASS_EXTRA_RECESS,
+    );
     const rearGlass = this.plate(glassShape, -reference.envelope.bodyDepth + 0.001);
 
     const panelShape = createRoundedRectShape(PANEL_WIDTH, DISPLAY_HEIGHT, DISPLAY_RADII);
@@ -241,8 +261,24 @@ export class DuoDevice implements DuoDeviceModel {
     const plateauGeometry = this.createPlateauGeometry();
     this.geometries.push(plateauGeometry);
 
+    const batteryGeometry = this.createBatteryGeometry();
+    this.geometries.push(batteryGeometry);
+
+    const bezelShape = createRoundedRectShape(
+      GLASS_PLATE_WIDTH + 0.0003,
+      GLASS_PLATE_HEIGHT + 0.0003,
+      GLASS_PLATE_RADII.map((radius) => radius + 0.00015) as unknown as CornerRadii,
+    );
+    const bezelGeometry = createRoundedPlateGeometry(
+      bezelShape,
+      -0.00012,
+      OUTLINE_SEGMENTS,
+    );
+    bezelGeometry.translate(RIGHT_BODY_CENTRE_X, BODY_CENTRE_Y, 0);
+    this.geometries.push(bezelGeometry);
+
     const coverShape = createRoundedRectShape(COVER_WIDTH, COVER_HEIGHT, COVER_RADII);
-    const coverGeometry = createRoundedPlateGeometry(coverShape, COVER_PANEL_Z, 24);
+    const coverGeometry = createRoundedPlateGeometry(coverShape, COVER_PANEL_Z, OUTLINE_SEGMENTS);
     // The cover panel faces rearward. Its plate is authored on +z and viewed
     // from the back when the right half is closed, so mirror u to keep Duo OS
     // reading left-to-right instead of backwards.
@@ -250,7 +286,7 @@ export class DuoDevice implements DuoDeviceModel {
     coverGeometry.translate(RIGHT_BODY_CENTRE_X, COVER_CENTRE_Y, 0);
     this.geometries.push(coverGeometry);
 
-    const coverGlassGeometry = createRoundedPlateGeometry(coverShape, COVER_GLASS_Z, 24);
+    const coverGlassGeometry = createRoundedPlateGeometry(coverShape, COVER_GLASS_Z, OUTLINE_SEGMENTS);
     mirrorUvs(coverGlassGeometry);
     coverGlassGeometry.translate(RIGHT_BODY_CENTRE_X, COVER_CENTRE_Y, 0);
     this.geometries.push(coverGlassGeometry);
@@ -278,6 +314,8 @@ export class DuoDevice implements DuoDeviceModel {
       panel: panelGeometry,
       innerGlass: innerGlassGeometry,
       plateau: plateauGeometry,
+      battery: batteryGeometry,
+      bezel: bezelGeometry,
       shell: shellGeometries.find((_, index) => HINGE_SHELLS[index]!.half === 'right')!,
       displayMaterial,
       cover: {
@@ -293,6 +331,8 @@ export class DuoDevice implements DuoDeviceModel {
       rearGlass: this.mirror(rearGlass),
       panel: this.mirror(panelGeometry),
       innerGlass: this.mirror(innerGlassGeometry),
+      battery: this.mirror(batteryGeometry),
+      bezel: this.mirror(bezelGeometry),
       shell: shellGeometries.find((_, index) => HINGE_SHELLS[index]!.half === 'left')!,
     };
     this.mapPanelUvs(mirrored.panel);
@@ -302,6 +342,12 @@ export class DuoDevice implements DuoDeviceModel {
       displayMaterial,
       cover: null,
     });
+
+    // The camera cluster is built with the right hardware. Re-parent it into
+    // the camera layer so it travels with the plateau, not with the chassis.
+    const cameraCluster = this.rightHalf.getObjectByName('camera-cluster');
+    const cameraLayer = this.layerGroups.get('camera-module')?.[0];
+    if (cameraCluster && cameraLayer) cameraLayer.add(cameraCluster);
 
     this.bridgeGeometry = this.createBridgeGeometry();
     this.bridgePositions = this.bridgeGeometry.getAttribute(
@@ -370,9 +416,44 @@ export class DuoDevice implements DuoDeviceModel {
     }
   }
 
-  setExploded(_exploded: boolean): void {
-    // Ticket 07 owns the six layer offsets. The domain contract already returns
-    // zero for every layer so nothing in the scene has to change shape yet.
+  setExploded(exploded: boolean, immediate = false): void {
+    this.explodeTarget = exploded ? 1 : 0;
+    if (immediate) {
+      this.explodeProgress = this.explodeTarget;
+      this.applyExplode();
+    }
+  }
+
+  /** Advance the eased, staggered explode rig. Called once per rendered frame. */
+  update(elapsedSeconds: number): void {
+    const delta =
+      this.lastUpdateSeconds === 0
+        ? 0
+        : Math.min(0.1, Math.max(0, elapsedSeconds - this.lastUpdateSeconds));
+    this.lastUpdateSeconds = elapsedSeconds;
+    if (this.explodeProgress === this.explodeTarget || delta === 0) return;
+    const step = delta / 0.8;
+    if (this.explodeTarget > this.explodeProgress) {
+      this.explodeProgress = Math.min(this.explodeTarget, this.explodeProgress + step);
+    } else {
+      this.explodeProgress = Math.max(this.explodeTarget, this.explodeProgress - step);
+    }
+    this.applyExplode();
+  }
+
+  private applyExplode(): void {
+    if (this.explodeProgress === this.explodeApplied) return;
+    this.explodeApplied = this.explodeProgress;
+    const offsets = explodeOffsets(this.explodeProgress);
+    EXPLODE_LAYER_IDS.forEach((id, index) => {
+      const z = offsets[index]!.z;
+      for (const group of this.layerGroups.get(id) ?? []) {
+        group.position.z = z;
+      }
+    });
+    // The bridge is authored in the device frame; shifting it with the inner
+    // display keeps both ends welded to their panels through the whole travel.
+    this.bridge.position.z = offsets[1]!.z;
   }
 
   dispose(): void {
@@ -386,7 +467,7 @@ export class DuoDevice implements DuoDeviceModel {
   }
 
   private plate(shape: ReturnType<typeof createRoundedRectShape>, z: number): BufferGeometry {
-    const geometry = createRoundedPlateGeometry(shape, z);
+    const geometry = createRoundedPlateGeometry(shape, z, OUTLINE_SEGMENTS);
     this.geometries.push(geometry);
     geometry.translate(RIGHT_BODY_CENTRE_X, BODY_CENTRE_Y, 0);
     return geometry;
@@ -422,6 +503,8 @@ export class DuoDevice implements DuoDeviceModel {
       panel: BufferGeometry;
       innerGlass: BufferGeometry;
       plateau: BufferGeometry | null;
+      battery: BufferGeometry;
+      bezel: BufferGeometry;
       shell: BufferGeometry;
       displayMaterial: MeshPhysicalMaterial;
       cover: {
@@ -431,6 +514,8 @@ export class DuoDevice implements DuoDeviceModel {
       } | null;
     },
   ): void {
+    const layers = this.createLayerGroups(group);
+
     const rail = new Mesh(parts.rail, this.railMaterial);
     rail.name = 'titanium-rail';
     rail.castShadow = true;
@@ -465,13 +550,28 @@ export class DuoDevice implements DuoDeviceModel {
     shell.castShadow = true;
     shell.receiveShadow = true;
 
-    group.add(rail, rear, front, panel, innerGlass, shell);
+    const bezel = new Mesh(parts.bezel, this.gasketMaterial);
+    bezel.name = 'rail-bezel';
+    bezel.castShadow = false;
+    bezel.receiveShadow = false;
+
+    layers['chassis-hinge']!.add(rail, shell, bezel);
+    layers['rear-glass']!.add(rear);
+    layers['inner-display']!.add(panel);
+    layers['cover-glass']!.add(front, innerGlass);
+
+    const battery = new Mesh(parts.battery, this.materialsByName.cavity);
+    battery.name = 'battery-cell';
+    battery.castShadow = false;
+    battery.receiveShadow = false;
+    layers.battery!.add(battery);
+
     if (parts.plateau) {
       const plateau = new Mesh(parts.plateau, this.plateauMaterial);
       plateau.name = 'camera-plateau';
       plateau.castShadow = true;
       plateau.receiveShadow = true;
-      group.add(plateau);
+      layers['camera-module']!.add(plateau);
     }
     if (parts.cover) {
       const cover = new Mesh(parts.cover.panel, parts.cover.material);
@@ -485,8 +585,48 @@ export class DuoDevice implements DuoDeviceModel {
       coverGlass.castShadow = false;
       coverGlass.receiveShadow = false;
 
-      group.add(cover, coverGlass);
+      layers['rear-glass']!.add(cover, coverGlass);
     }
+  }
+
+  private createLayerGroups(group: Group): Record<ExplodeLayerId, Group> {
+    const layers = {} as Record<ExplodeLayerId, Group>;
+    for (const id of EXPLODE_LAYER_IDS) {
+      const layer = new Group();
+      layer.name = `layer-${id}`;
+      group.add(layer);
+      layers[id] = layer;
+      const list = this.layerGroups.get(id) ?? [];
+      list.push(layer);
+      this.layerGroups.set(id, list);
+    }
+    return layers;
+  }
+
+  /** World centres of the six layer groups, used to anchor the HTML labels. */
+  getLayerCentres(): readonly { id: ExplodeLayerId; position: Vector3 }[] {
+    this.object.updateMatrixWorld(true);
+    const box = new Box3();
+    return EXPLODE_LAYER_IDS.map((id) => {
+      box.makeEmpty();
+      for (const group of this.layerGroups.get(id) ?? []) {
+        box.expandByObject(group);
+      }
+      const position = box.isEmpty()
+        ? new Vector3()
+        : box.getCenter(new Vector3());
+      return { id, position };
+    });
+  }
+
+  private createBatteryGeometry(): BufferGeometry {
+    const width = reference.body.halfWidth * 0.68;
+    const height = reference.envelope.height * 0.62;
+    const radius = Math.min(width, height) * 0.04;
+    const shape = createRoundedRectShape(width, height, [radius, radius, radius, radius]);
+    const geometry = createRoundedPlateGeometry(shape, -0.0016, 16);
+    geometry.translate(RIGHT_BODY_CENTRE_X, BODY_CENTRE_Y, 0);
+    return geometry;
   }
 
   private createPlateauGeometry(): BufferGeometry {
@@ -549,8 +689,8 @@ export class DuoDevice implements DuoDeviceModel {
     const count = Math.min(bridge.points.length, u.length);
     for (let index = 0; index < count; index += 1) {
       const point = bridge.points[index]!;
-      positions.setXYZ(index * 2, point.x, DISPLAY_BOTTOM, point.z + BRIDGE_LIFT);
-      positions.setXYZ(index * 2 + 1, point.x, DISPLAY_TOP, point.z + BRIDGE_LIFT);
+      positions.setXYZ(index * 2, point.x, DISPLAY_BOTTOM, point.z + BRIDGE_LIFT - GLASS_EXTRA_RECESS);
+      positions.setXYZ(index * 2 + 1, point.x, DISPLAY_TOP, point.z + BRIDGE_LIFT - GLASS_EXTRA_RECESS);
       const across = u[index]!;
       uvs.setXY(index * 2, across, 0);
       uvs.setXY(index * 2 + 1, across, 1);

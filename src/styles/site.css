@@ -265,7 +265,7 @@ a {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   min-height: calc(100svh - var(--nav-height));
   padding: clamp(2rem, 5vh, 4rem) var(--gutter) clamp(2.5rem, 7vh, 5rem);
 }
@@ -1219,7 +1219,7 @@ body.is-ready .hero__copy > :nth-child(5) {
 
 @media (max-width: 860px) {
   :root {
-    --sheet-h: 13rem;
+    --sheet-h: 21rem;
   }
 
   /* The canvas ends above the control sheet, so the device is never framed
@@ -1501,5 +1501,214 @@ body[data-motion="off"] .scroll-cue__line::after {
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Presets, exploded view and layer labels
+   -------------------------------------------------------------------------- */
+
+.console__row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.preset {
+  flex: 1 1 0;
+  min-width: 4.2rem;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease-soft),
+    border-color 0.2s var(--ease-soft),
+    background 0.2s var(--ease-soft);
+}
+
+.preset:hover {
+  color: var(--ink-soft);
+  border-color: var(--line-soft);
+}
+
+.preset[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: var(--accent-soft);
+}
+
+.console__row--split {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.console__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease-soft),
+    border-color 0.2s var(--ease-soft),
+    background 0.2s var(--ease-soft);
+}
+
+.console__toggle-dot {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.console__toggle[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: var(--accent-soft);
+}
+
+.console__toggle[aria-pressed="true"] .console__toggle-dot {
+  opacity: 1;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.explode-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  font-family: var(--font-mono);
+}
+
+.explode-label {
+  position: absolute;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid rgba(230, 226, 218, 0.14);
+  border-radius: 0.35rem;
+  background: rgba(7, 8, 10, 0.72);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.explode-label::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 1.1rem;
+  height: 1px;
+  background: rgba(230, 226, 218, 0.3);
+}
+
+.explode-label[data-layer="cover-glass"]::after,
+.explode-label[data-layer="inner-display"]::after,
+.explode-label[data-layer="chassis-hinge"]::after {
+  right: -1.1rem;
+}
+
+.explode-label[data-layer="battery"]::after,
+.explode-label[data-layer="rear-glass"]::after,
+.explode-label[data-layer="camera-module"]::after {
+  left: -1.1rem;
+}
+
+.explode-label__name {
+  color: var(--ink);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.explode-label__detail {
+  color: var(--ink-faint);
+  font-size: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 760px) {
+  .explode-labels {
+    position: fixed;
+    inset: auto 0 var(--sheet-h);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    padding: 0 var(--gutter) 1rem;
+  }
+
+  .explode-label {
+    position: static;
+    transform: none;
+    white-space: normal;
+    background: rgba(7, 8, 10, 0.82);
+  }
+
+  .explode-label::after {
+    display: none;
+  }
+}
+
+.explode-labels[hidden] {
+  display: none !important;
+}
+
+@media (min-width: 861px) and (max-height: 980px) {
+  .hero__title {
+    font-size: clamp(3.4rem, 7.4vw, 6.2rem);
+  }
+
+  .hero__lede {
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .hero__meta {
+    margin-top: 0.8rem;
+  }
+
+  .console {
+    gap: 0.55rem;
+  }
+
+  .fold-control {
+    margin-top: 0.55rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero__lede {
+    display: none;
+  }
+
+  .hero__title {
+    margin-top: 0.9rem;
+  }
+
+  .scroll-cue {
+    display: none;
   }
 }

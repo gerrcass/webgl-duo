@@ -222,8 +222,12 @@ describe('reference design sheet', () => {
   });
 
   it('defines the complete material family and procedural map contract', () => {
-    expect(reference.frame.rail.roughness).toBe(0.34);
-    expect(reference.frame.rail.anisotropy).toBe(0.65);
+    expect(reference.frame.rail.roughness).toBe(0.5);
+    expect(reference.frame.rail.clearcoat).toBe(0.015);
+    expect(reference.frame.rail.metalness).toBe(0.92);
+    expect(reference.frame.rail.envMapIntensity).toBe(0.3);
+    expect(reference.frame.rail.tintGain).toBe(0.65);
+    expect(reference.frame.rail.anisotropy).toBe(0.3);
     expect(reference.frame.rail.anisotropyRotationDegrees).toBe(90);
     expect(reference.frame.frontGlass.roughness).toBe(0.045);
     expect(reference.frame.frontGlass.clearcoat).toBe(1);

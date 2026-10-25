@@ -1,6 +1,7 @@
-import type { Object3D } from 'three';
+import type { Object3D, Vector3 } from 'three';
 import type { ColourwayId } from '../../domain/reference';
 import type { QualityTier } from '../../domain/quality';
+import type { ExplodeLayerId } from '../../domain/kinematics';
 
 /**
  * The seam between the studio and the product.
@@ -15,6 +16,9 @@ export interface DuoDeviceModel {
   setFoldAngle(degrees: number): void;
   setColourway(colourway: ColourwayId): void;
   setQuality(tier: QualityTier): void;
-  setExploded(exploded: boolean): void;
+  setExploded(exploded: boolean, immediate?: boolean): void;
+  /** Advance the exploded-view rig; optional so simple models stay valid. */
+  update?(elapsedSeconds: number): void;
+  getLayerCentres?(): readonly { id: ExplodeLayerId; position: Vector3 }[];
   dispose(): void;
 }

@@ -26,11 +26,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { reference } from '../domain/reference';
 import { resolvePixelRatio, type QualityTier } from '../domain/quality';
-import type { DuoState } from '../domain/store';
+import type { DuoState, PresetId } from '../domain/store';
+import type { ExplodeLayerId } from '../domain/kinematics';
 import { DuoDevice } from './device/duo-device';
 import type { DuoDeviceModel } from './device/device-model';
 import { createStudioEnvironment, type StudioEnvironment } from './environment';
-import { HERO_FOV_DEGREES, computeHeroFraming } from './framing';
+import {
+  HERO_FOV_DEGREES,
+  computeHeroFraming,
+  computePresetFraming,
+  type CameraPose,
+} from './framing';
 
 /** A three-degree backward lean; art direction, not a product dimension. */
 const PRODUCT_TILT_RADIANS = 0.052;
@@ -75,6 +81,10 @@ export class StudioScene {
   private viewportWidth = 1;
   private viewportHeight = 1;
   private quality: QualityTier;
+  private preset: PresetId = 'hero';
+  private exploded = false;
+  private cameraPose: CameraPose | null = null;
+  private lastElapsedSeconds = 0;
 
   constructor(
     renderer: WebGLRenderer,
@@ -111,7 +121,7 @@ export class StudioScene {
 
     this.environment = createStudioEnvironment(renderer);
     this.scene.environment = this.environment.texture;
-    this.scene.environmentIntensity = 0.55;
+    this.scene.environmentIntensity = 0.4;
 
     this.sweep = this.createSweep();
     this.scene.add(this.sweep);
@@ -146,16 +156,21 @@ export class StudioScene {
   }
 
   applyState(state: DuoState): void {
+    this.preset = this.detailView ? 'detail' : state.preset;
+    this.exploded = state.exploded;
     if (this.detailView) {
       // Ticket 06 evidence: open flat, rear facing the camera, macro framing.
       this.device.setFoldAngle(180);
       this.device.setColourway(state.colourway);
       this.device.object.rotation.y = Math.PI;
+      this.device.setExploded(false, true);
       return;
     }
-    this.device.setFoldAngle(state.foldAngle);
+    // The exploded diagram is flat, so every layer separates orthogonally. The
+    // stored fold angle is untouched and is re-applied exactly on exit.
+    this.device.setFoldAngle(state.exploded ? 180 : state.foldAngle);
     this.device.setColourway(state.colourway);
-    this.device.setExploded(state.exploded);
+    this.device.setExploded(state.exploded, !this.motionEnabled || this.evidence);
     // Rear evidence view: when the device is closed the cover display already
     // faces the hero camera, so rotating the whole rig would show the plain
     // half instead. When open, the rear view shows both outer faces.
@@ -200,33 +215,116 @@ export class StudioScene {
   }
 
   update(elapsedSeconds: number, introProgress: number): void {
-    const framing = computeHeroFraming(
-      { width: this.viewportWidth, height: this.viewportHeight },
-      this.motionEnabled ? introProgress : 1,
-    );
+    const delta =
+      this.lastElapsedSeconds === 0
+        ? 0
+        : Math.min(0.1, Math.max(0, elapsedSeconds - this.lastElapsedSeconds));
+    this.lastElapsedSeconds = elapsedSeconds;
+    this.device.update?.(elapsedSeconds);
+
+    const framing = this.exploded
+      ? this.computeExplodedFraming()
+      : computePresetFraming(
+          { width: this.viewportWidth, height: this.viewportHeight },
+          this.preset,
+          this.motionEnabled ? introProgress : 1,
+        );
 
     const settled = !this.motionEnabled || introProgress >= 1;
     const idleAzimuth =
-      settled && this.motionEnabled ? Math.sin(elapsedSeconds * 0.22) * 0.004 : 0;
+      settled && this.motionEnabled && !this.exploded
+        ? Math.sin(elapsedSeconds * 0.22) * 0.004
+        : 0;
     const idleElevation =
-      settled && this.motionEnabled
+      settled && this.motionEnabled && !this.exploded
         ? Math.sin(elapsedSeconds * 0.17 + 0.8) * 0.002
         : 0;
 
-    const azimuth = framing.azimuthRadians + idleAzimuth;
-    const elevation = framing.elevationRadians + idleElevation;
-    const distance = framing.distance;
+    const target: CameraPose = {
+      azimuthRadians: framing.azimuthRadians + idleAzimuth,
+      elevationRadians: framing.elevationRadians + idleElevation,
+      distance: framing.distance,
+      target: framing.target,
+      fovDegrees: framing.fovDegrees,
+    };
 
+    if (!this.motionEnabled || !this.cameraPose || this.evidence) {
+      this.cameraPose = target;
+    } else {
+      // Frame-rate independent damping: presets glide, never cut.
+      const blend = 1 - Math.exp(-delta * 5.5);
+      const current = this.cameraPose;
+      this.cameraPose = {
+        azimuthRadians:
+          current.azimuthRadians +
+          (target.azimuthRadians - current.azimuthRadians) * blend,
+        elevationRadians:
+          current.elevationRadians +
+          (target.elevationRadians - current.elevationRadians) * blend,
+        distance:
+          current.distance + (target.distance - current.distance) * blend,
+        target: {
+          x: current.target.x + (target.target.x - current.target.x) * blend,
+          y: current.target.y + (target.target.y - current.target.y) * blend,
+          z: current.target.z + (target.target.z - current.target.z) * blend,
+        },
+        fovDegrees: target.fovDegrees,
+      };
+    }
+
+    const pose = this.cameraPose;
+    this.camera.fov = pose.fovDegrees;
+    this.camera.updateProjectionMatrix();
     this.camera.position.set(
-      framing.target.x + distance * Math.cos(elevation) * Math.sin(azimuth),
-      framing.target.y + distance * Math.sin(elevation),
-      framing.target.z + distance * Math.cos(elevation) * Math.cos(azimuth),
+      pose.target.x +
+        pose.distance * Math.cos(pose.elevationRadians) * Math.sin(pose.azimuthRadians),
+      pose.target.y + pose.distance * Math.sin(pose.elevationRadians),
+      pose.target.z +
+        pose.distance * Math.cos(pose.elevationRadians) * Math.cos(pose.azimuthRadians),
     );
-    this.camera.lookAt(
-      framing.target.x,
-      framing.target.y,
-      framing.target.z,
-    );
+    this.camera.lookAt(pose.target.x, pose.target.y, pose.target.z);
+  }
+
+  /** Exploded diagram: open flat and a low, near-side view that fans the layers. */
+  private computeExplodedFraming(): ReturnType<typeof computeHeroFraming> {
+    const halfFovTan = Math.tan((HERO_FOV_DEGREES * Math.PI) / 360);
+    const distance = 1.15;
+    const visibleHeight = 2 * distance * halfFovTan;
+    const aspect = this.viewportWidth / this.viewportHeight;
+    return {
+      aspect,
+      fovDegrees: HERO_FOV_DEGREES,
+      distance,
+      azimuthRadians: 0.62,
+      elevationRadians: 0.15,
+      target: {
+        x: this.viewportWidth > 800 ? 0.03 : 0,
+        y: reference.envelope.height / 2,
+        z: -0.012,
+      },
+      visibleWidth: visibleHeight * aspect,
+      visibleHeight,
+    };
+  }
+
+  /** Projected layer centres in stage-normalised coordinates, for HTML labels. */
+  getLayerAnchors(): readonly {
+    id: ExplodeLayerId;
+    x: number;
+    y: number;
+    visible: boolean;
+  }[] {
+    const centres = this.device.getLayerCentres?.() ?? [];
+    return centres.map(({ id, position }) => {
+      const projected = position.clone().project(this.camera);
+      return {
+        id,
+        x: (projected.x + 1) / 2,
+        y: (1 - projected.y) / 2,
+        visible:
+          projected.z > -1 && projected.z < 1 && Math.abs(projected.x) <= 1 && Math.abs(projected.y) <= 1,
+      };
+    });
   }
 
   render(): void {
@@ -469,7 +567,7 @@ export class StudioScene {
 
     const key = new SpotLight(
       new Color(reference.studio.key.color),
-      42,
+      30,
       7,
       0.5,
       1,
@@ -487,7 +585,7 @@ export class StudioScene {
 
     const rim = new SpotLight(
       new Color(reference.studio.rim.color),
-      30,
+      21,
       6,
       0.46,
       1,
@@ -505,7 +603,7 @@ export class StudioScene {
 
     const keyArea = new RectAreaLight(
       new Color(reference.studio.key.color),
-      3.2,
+      2.3,
       reference.studio.key.width,
       reference.studio.key.height,
     );
@@ -594,7 +692,7 @@ const GRADE_SHADER = {
 
       float radial = 1.0 - smoothstep(0.16, 0.85, distance(vUv, vec2(0.5)));
       color.rgb *= mix(1.0, radial, uVignette);
-      float grain = (hash(floor(vUv * vec2(1920.0, 1080.0))) - 0.5) * uGrain * 0.18;
+      float grain = (hash(floor(vUv * vec2(1920.0, 1080.0))) - 0.5) * uGrain;
       color.rgb += grain;
       gl_FragColor = color;
     }
