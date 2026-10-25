@@ -68,6 +68,7 @@ export function boot(): void {
     forceFallback: launch.forceFallback,
     quality: launch.quality,
     rearView: launch.view === 'rear',
+    detailView: launch.view === 'detail',
   });
 
   if (launch.testMode || launch.debugMode) {

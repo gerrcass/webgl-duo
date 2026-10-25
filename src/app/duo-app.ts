@@ -34,6 +34,16 @@ export interface DuoAppOptions {
   readonly quality?: string;
   /** Evidence-only rear azimuth; does not change the device pose or defaults. */
   readonly rearView?: boolean;
+  /** Evidence-only macro camera on the camera plateau and rail (ticket 06). */
+  readonly detailView?: boolean;
+}
+
+export interface PerformanceStats {
+  readonly drawCalls: number;
+  readonly triangles: number;
+  readonly geometries: number;
+  readonly textures: number;
+  readonly programs: number;
 }
 
 export interface DuoAppSnapshot extends DuoState {
@@ -70,6 +80,8 @@ export interface DuoApp {
   setExploded(exploded: boolean): void;
   setQuality(quality: QualityTierId): void;
   captureScreenshot(): Promise<Blob | null>;
+  /** Renderer counters from the most recent frame, for the evidence log. */
+  getPerformance(): PerformanceStats;
 }
 
 const INTRO_SECONDS = 1.8;
@@ -228,6 +240,7 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
         studio = new StudioScene(renderer, initialQuality, {
           motionEnabled,
           rearView: options.rearView === true,
+          detailView: options.detailView === true,
         });
         studio.applyState(store.getState());
         studio.setViewport(
@@ -330,6 +343,19 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
     setQuality(quality: QualityTierId): void {
       if (!isQualityTierId(quality)) return;
       store.dispatch({ type: 'setQuality', value: quality });
+    },
+
+    getPerformance(): PerformanceStats {
+      if (!renderer) {
+        return { drawCalls: 0, triangles: 0, geometries: 0, textures: 0, programs: 0 };
+      }
+      return {
+        drawCalls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
+        programs: renderer.info.programs?.length ?? 0,
+      };
     },
 
     async captureScreenshot(): Promise<Blob | null> {
