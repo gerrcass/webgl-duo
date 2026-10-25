@@ -124,12 +124,12 @@ export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
   plateau.name = 'aluminium-plateau';
 
   const spine = physical({
-    color: new Color(palette.railTint).lerp(new Color(0xffffff), 0.18),
+    color: new Color(palette.railTint).lerp(new Color(0xffffff), 0.06),
     metalness: 1,
     roughness: reference.frame.hingeSpine.roughness,
     clearcoat: reference.frame.hingeSpine.clearcoat,
     clearcoatRoughness: 0.03,
-    envMapIntensity: 1.25,
+    envMapIntensity: 0.7,
   });
   spine.name = 'polished-hinge-spine';
 
@@ -308,7 +308,7 @@ export function applyColourway(materials: DeviceMaterials, palette: Colourway): 
   materials.rail.color.set(palette.railTint);
   materials.rearGlass.color.set(palette.rearGlass);
   materials.plateau.color.set(palette.plateauTint);
-  materials.spine.color.set(palette.railTint).lerp(new Color(0xffffff), 0.18);
+  materials.spine.color.set(palette.railTint).lerp(new Color(0xffffff), 0.06);
   materials.antenna.color.set(palette.railTint);
   materials.buttonTop.color.set(palette.railTint);
   materials.buttonChamfer.color.set(palette.railTint);

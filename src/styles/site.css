@@ -963,6 +963,247 @@ body.is-ready .hero__copy > :nth-child(5) {
 }
 
 /* --------------------------------------------------------------------------
+   Studio console: fold, finish, quality and capture
+   -------------------------------------------------------------------------- */
+
+:root {
+  --sheet-h: 0rem;
+}
+
+.console {
+  display: grid;
+  gap: 0.9rem;
+  width: min(23rem, 100%);
+  margin-top: clamp(1rem, 2.4vh, 1.6rem);
+}
+
+.console__label {
+  display: block;
+  padding: 0;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.swatches {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.swatches__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.65rem 0.4rem 0.5rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: rgba(242, 239, 233, 0.025);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: border-color 180ms var(--ease-soft), color 180ms var(--ease-soft),
+    background-color 180ms var(--ease-soft);
+}
+
+.swatch:hover {
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.swatch__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.swatch:has(.swatch__input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.swatch:has(.swatch__input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.swatch__chip {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      140deg,
+      var(--swatch) 0%,
+      var(--swatch) 44%,
+      var(--swatch-accent) 46%,
+      var(--swatch-accent) 100%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.swatch__name {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.console__row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.console__select {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.console__select select {
+  flex: none;
+  min-width: 8.5rem;
+  padding: 0.45rem 1.9rem 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background-color: rgba(242, 239, 233, 0.035);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%),
+    linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%);
+  background-position: right 0.95rem center, right 0.65rem center;
+  background-repeat: no-repeat;
+  background-size: 0.28rem 0.28rem;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  appearance: none;
+  cursor: pointer;
+}
+
+.console__hint {
+  margin: 0;
+  max-width: 20rem;
+  color: var(--ink-faint);
+  font-size: 0.5rem;
+  line-height: 1.55;
+}
+
+.console__action {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-self: start;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 180ms var(--ease-soft), color 180ms var(--ease-soft);
+}
+
+.console__action:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.console__action[aria-busy="true"] {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.console__action-icon {
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 50% 50%, currentColor 0 22%, transparent 24%);
+}
+
+/* --------------------------------------------------------------------------
+   Toast: fallback and context-loss notices
+   -------------------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  bottom: calc(var(--sheet-h) + 1rem);
+  left: var(--gutter);
+  z-index: 40;
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  max-width: min(24rem, calc(100vw - 2 * var(--gutter)));
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: rgba(12, 14, 18, 0.94);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+}
+
+.toast[hidden] {
+  display: none;
+}
+
+.toast__dot {
+  flex: none;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-top: 0.4rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.toast__text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.fallback__specs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.9rem 1.5rem;
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.fallback__specs .spec-row dt {
+  color: var(--ink-faint);
+}
+
+:where(a, button, select, input, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+/* --------------------------------------------------------------------------
    Responsive
    -------------------------------------------------------------------------- */
 
@@ -977,6 +1218,105 @@ body.is-ready .hero__copy > :nth-child(5) {
 }
 
 @media (max-width: 860px) {
+  :root {
+    --sheet-h: 13rem;
+  }
+
+  /* The canvas ends above the control sheet, so the device is never framed
+     behind a control. */
+  .stage {
+    bottom: var(--sheet-h);
+  }
+
+  .console {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 9;
+    width: 100%;
+    margin: 0;
+    padding: 0.9rem var(--gutter) calc(0.9rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line-soft);
+    background: linear-gradient(
+      180deg,
+      rgba(7, 8, 10, 0.82) 0%,
+      rgba(7, 8, 10, 0.97) 42%,
+      rgba(5, 6, 8, 1) 100%
+    );
+    backdrop-filter: blur(18px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.7rem 1rem;
+  }
+
+  /* A persistent transform would make the console a containing block for its
+     own fixed positioning; keep it out of the hero's rise animation. */
+  body.is-ready .hero__copy > .console {
+    animation: none;
+  }
+
+  .console .fold-control,
+  .console .swatches {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .fold-control {
+    width: 100%;
+    max-width: none;
+    margin-top: 0;
+  }
+
+  .console .fold-control__hint {
+    display: none;
+  }
+
+  .swatches__row {
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+  }
+
+  .swatch {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 0.4rem 0.3rem;
+  }
+
+  .swatch__name {
+    display: none;
+  }
+
+  .console__row {
+    align-content: start;
+  }
+
+  .console__hint {
+    display: none;
+  }
+
+  .console__select select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .console__action {
+    align-self: center;
+    justify-self: stretch;
+    justify-content: center;
+    height: 100%;
+    max-height: 2.3rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .toast {
+    top: calc(var(--nav-height) + 0.5rem);
+    bottom: auto;
+  }
+
+  .hero__meta {
+    display: none;
+  }
+
   .stage-vignette::after {
     background: linear-gradient(
       180deg,
@@ -1028,8 +1368,8 @@ body.is-ready .hero__copy > :nth-child(5) {
 
   .fold-control {
     width: 100%;
-    max-width: 22rem;
-    margin-top: 1.1rem;
+    max-width: none;
+    margin-top: 0;
   }
 
   .scroll-cue {

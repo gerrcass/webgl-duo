@@ -37,15 +37,23 @@ export const HERO_FOV_DEGREES =
 /** Art direction that is not a product dimension. */
 const COMPOSITION = {
   /** Fraction of the viewport width the open device should occupy in portrait. */
-  portraitWidthFill: 0.82,
-  /** Device height as a fraction of viewport height at the desktop shot. */
-  desktopHeightFill: 0.74,
-  /** Shift the camera target left so the device sits right of centre. */
-  desktopTargetShiftX: 0.23,
-  /** Lowest comfortable centre for the device on portrait screens. */
-  portraitDeviceCentre: 0.72,
+  portraitWidthFill: 0.8,
+  /** Device height as a fraction of the hero viewport at the desktop shot. */
+  desktopHeightFill: 0.8,
+  /** Screen fraction the device centre sits at on desktop (right of centre). */
+  desktopDeviceCentre: 0.72,
+  /** Screen fraction the device centre sits at on portrait. */
+  portraitDeviceCentre: 0.765,
+  /** Screen fraction (from the top) the device centre sits at on desktop. */
+  desktopDeviceCentreY: 0.475,
   /** Keep the device's bottom edge above this fraction of the viewport. */
-  portraitBottomMargin: 0.05,
+  portraitBottomMargin: 0.055,
+  /**
+   * Projected width of the device at the presentation angle, over the flat open
+   * width. The swinging half comes toward camera, so the silhouette is wider
+   * than `openWidth`; without this allowance the right rail clipped.
+   */
+  projectionAllowance: 1.14,
   /** Three-quarter view: camera to the right and slightly above the device. */
   azimuthRadians: 0.3,
   elevationRadians: 0.1,
@@ -78,12 +86,26 @@ export function computeHeroFraming(
 
   const halfFovTan = Math.tan((HERO_FOV_DEGREES * Math.PI) / 360);
   const sheetDistance = reference.camera.framingDistance;
-  const requiredWidth = reference.envelope.openWidth / COMPOSITION.portraitWidthFill;
-  const fitWidthDistance = requiredWidth / (2 * halfFovTan * aspect);
-  const fitHeightDistance =
-    reference.envelope.height / COMPOSITION.desktopHeightFill / (2 * halfFovTan);
+  const projectedWidth = reference.envelope.openWidth * COMPOSITION.projectionAllowance;
+  const projectedHeight = reference.envelope.height * 1.05;
 
-  const settledDistance = Math.max(sheetDistance, fitHeightDistance, fitWidthDistance);
+  // Desktop: the device occupies the right ~55% of the frame, centred at
+  // `desktopDeviceCentre`, with the caption row left clear underneath.
+  const desktopHalfWidthFraction = Math.min(
+    COMPOSITION.desktopDeviceCentre - 0.5,
+    0.97 - COMPOSITION.desktopDeviceCentre,
+  );
+  const fitWidthDistance =
+    projectedWidth / (2 * desktopHalfWidthFraction) / (2 * halfFovTan * aspect);
+  const fitHeightDistance =
+    projectedHeight / 0.76 / (2 * halfFovTan);
+
+  const portraitRequiredWidth = projectedWidth / COMPOSITION.portraitWidthFill;
+  const portraitFitWidth = portraitRequiredWidth / (2 * halfFovTan * aspect);
+
+  const settledDistance = portrait
+    ? Math.max(portraitFitWidth, projectedHeight / 0.4 / (2 * halfFovTan))
+    : Math.max(sheetDistance, fitHeightDistance, fitWidthDistance);
   const introEase = easeIntro(introProgress);
   const distance = settledDistance * (1.06 - 0.06 * introEase);
 
@@ -97,9 +119,11 @@ export function computeHeroFraming(
         COMPOSITION.portraitDeviceCentre,
         1 - COMPOSITION.portraitBottomMargin - halfDeviceFraction,
       )
-    : 0.5;
+    : COMPOSITION.desktopDeviceCentreY;
 
-  const targetX = portrait ? 0 : -visibleWidth * COMPOSITION.desktopTargetShiftX;
+  const targetX = portrait
+    ? 0
+    : -visibleWidth * (COMPOSITION.desktopDeviceCentre - 0.5);
   const targetY =
     deviceHalfHeight + (deviceCentreFraction - 0.5) * visibleHeight;
 

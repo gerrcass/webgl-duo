@@ -117,18 +117,30 @@ test('reframes at 360, 768, 1440 and ultrawide without clipping', async ({
 
     const layout = await page.evaluate(() => {
       const canvas = document.querySelector('#stage canvas');
+      const stage = document.querySelector('#stage');
       const title = document.querySelector('h1');
+      const sheet = document.querySelector('.console');
       return {
         innerWidth: window.innerWidth,
         scrollWidth: document.documentElement.scrollWidth,
         canvas: canvas?.getBoundingClientRect().toJSON() ?? null,
+        // The stage is inset above the mobile control sheet, so the canvas
+        // fills the stage box rather than the raw viewport.
+        stageHeight: stage?.getBoundingClientRect().height ?? 0,
+        sheetTop: sheet?.getBoundingClientRect().top ?? window.innerHeight,
+        sheetFixed: sheet ? getComputedStyle(sheet).position === 'fixed' : false,
         title: title?.getBoundingClientRect().toJSON() ?? null,
       };
     });
 
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1);
     expect(layout.canvas?.width).toBeCloseTo(viewport.width, 0);
-    expect(layout.canvas?.height).toBeCloseTo(viewport.height, 0);
+    expect(layout.canvas?.height).toBeCloseTo(layout.stageHeight, 0);
+    // Nothing is framed behind a control: on the bottom-sheet layout the
+    // canvas stops above the sheet.
+    if (layout.sheetFixed) {
+      expect(layout.canvas!.bottom).toBeLessThanOrEqual(layout.sheetTop + 1);
+    }
     expect(layout.title).not.toBeNull();
     expect(layout.title!.left).toBeGreaterThanOrEqual(0);
     expect(layout.title!.right).toBeLessThanOrEqual(viewport.width);

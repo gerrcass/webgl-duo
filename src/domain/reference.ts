@@ -133,13 +133,13 @@ export const reference = {
   /** §4 Frame and surfaces */
   frame: {
     rail: {
-      roughness: ratio(0.28),
-      clearcoat: ratio(0.12),
+      roughness: ratio(0.34),
+      clearcoat: ratio(0.04),
       anisotropy: ratio(0.65),
       /** Brushing runs along the long (Y) axis, so the highlight is rotated 90°. */
       anisotropyRotationDegrees: 90,
       metalness: ratio(1),
-      envMapIntensity: 1.35,
+      envMapIntensity: 0.62,
       brushedRoughnessContrast: ratio(0.16),
     },
     frontGlass: {
@@ -225,21 +225,23 @@ export const reference = {
   },
   display: {
     /** Emissive display families: the artwork is self-lit, the glass is separate. */
-    emissiveIntensity: ratio(0.92),
+    emissiveIntensity: ratio(1.05),
+    /** The flexible bridge sits in the crease's shadow; lift its own emission. */
+    bridgeEmissiveGain: ratio(1.22),
     glassRoughness: ratio(0.08),
     metalness: ratio(0),
     envMapIntensity: ratio(0.22),
     /** Off-axis emission falloff at 90°; 1.0 would never dim. */
-    offAxisDimFloor: ratio(0.62),
-    offAxisDimExponent: ratio(0.75),
+    offAxisDimFloor: ratio(0.7),
+    offAxisDimExponent: ratio(0.7),
     /** Soft optical crease over the bridge, never a hard line. */
-    creaseWidth: mm(1.4),
-    creaseStrengthFlat: ratio(0.045),
-    creaseStrengthFolded: ratio(0.16),
+    creaseWidth: mm(1.1),
+    creaseStrengthFlat: ratio(0.035),
+    creaseStrengthFolded: ratio(0.1),
     /** The cover glass is a separate transparent plate over each display. */
-    glassOpacity: ratio(0.065),
+    glassOpacity: ratio(0.03),
     glassClearcoatRoughness: ratio(0.06),
-    glassEnvMapIntensity: ratio(0.34),
+    glassEnvMapIntensity: ratio(0.16),
     /** Construction: keep the panel a hair proud of its rail to avoid z-fighting. */
     surfaceClearance: mm(0.1),
     /** Construction: inner cover-glass surface sits this far in front of the panel. */
@@ -334,7 +336,7 @@ export const reference = {
     {
       id: 'dusk',
       name: 'Dusk Titanium',
-      railTint: '#5a5f6e',
+      railTint: '#4b5060',
       rearGlass: '#2c3140',
       plateauTint: '#4d5363',
       accent: '#8b7dff',

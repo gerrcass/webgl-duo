@@ -13,13 +13,23 @@
   <body>
     <a class="skip-link" href="#design">Skip to the design story</a>
 
-    <div
-      id="stage"
+    <div id="stage"
       class="stage"
       role="img"
       aria-label="A titanium iPhone Duo concept device, rendered at real-world scale in a dark photography studio."
+      aria-describedby="stage-description"
     ></div>
+    <p id="stage-description" class="visually-hidden">
+      A three-quarter view of the open iPhone Duo at the presentation angle,
+      showing both Duo OS displays and the titanium rails. The fold, finish and
+      render quality can be changed with the studio controls.
+    </p>
     <div class="stage-vignette" aria-hidden="true"></div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+      <span class="toast__dot" aria-hidden="true"></span>
+      <p class="toast__text" data-ref="toast-text"></p>
+    </div>
 
     <div id="fallback" class="fallback" hidden>
       <div class="poster" aria-hidden="true">
@@ -34,6 +44,7 @@
       <div class="fallback__note">
         <p class="eyebrow">Fallback view</p>
         <p class="fallback__copy" data-ref="fallback-note"></p>
+        <dl class="fallback__specs" data-ref="fallback-specs"></dl>
       </div>
     </div>
 
@@ -70,31 +81,51 @@
           </p>
           <p class="hero__meta" data-ref="hero-meta"></p>
 
-          <div class="fold-control" data-ref="fold-control">
-            <div class="fold-control__head">
-              <label class="fold-control__label" for="fold-slider">Hinge pose</label>
-              <output class="fold-control__value" data-ref="fold-output" for="fold-slider">158°</output>
+          <div class="console" data-ref="console" role="group" aria-label="Studio controls">
+            <div class="fold-control" data-ref="fold-control">
+              <div class="fold-control__head">
+                <label class="fold-control__label" for="fold-slider">Hinge pose</label>
+                <output class="fold-control__value" data-ref="fold-output" for="fold-slider">158°</output>
+              </div>
+              <input
+                id="fold-slider"
+                class="fold-control__slider"
+                data-ref="fold-slider"
+                type="range"
+                min="0"
+                max="180"
+                step="1"
+                value="158"
+                list="fold-detents"
+                aria-describedby="fold-hint"
+              />
+              <datalist id="fold-detents">
+                <option value="30"></option>
+                <option value="60"></option>
+                <option value="90"></option>
+                <option value="120"></option>
+                <option value="150"></option>
+              </datalist>
+              <p class="fold-control__hint" id="fold-hint">0° closed · 180° open · detents at 30, 60, 90, 120, 150</p>
             </div>
-            <input
-              id="fold-slider"
-              class="fold-control__slider"
-              data-ref="fold-slider"
-              type="range"
-              min="0"
-              max="180"
-              step="1"
-              value="158"
-              list="fold-detents"
-              aria-describedby="fold-hint"
-            />
-            <datalist id="fold-detents">
-              <option value="30"></option>
-              <option value="60"></option>
-              <option value="90"></option>
-              <option value="120"></option>
-              <option value="150"></option>
-            </datalist>
-            <p class="fold-control__hint" id="fold-hint">0° closed · 180° open · detents at 30, 60, 90, 120, 150</p>
+
+            <fieldset class="swatches" data-ref="swatches">
+              <legend class="console__label">Finish</legend>
+              <div class="swatches__row" data-ref="swatch-row"></div>
+            </fieldset>
+
+            <div class="console__row">
+              <label class="console__label" for="quality-tier">Render quality</label>
+              <div class="console__select">
+                <select id="quality-tier" data-ref="quality" aria-describedby="quality-hint"></select>
+                <p class="console__hint" id="quality-hint" data-ref="quality-hint"></p>
+              </div>
+            </div>
+
+            <button class="console__action" type="button" data-ref="screenshot">
+              <span class="console__action-icon" aria-hidden="true"></span>
+              Capture still
+            </button>
           </div>
 
           <a class="scroll-cue" href="#design">

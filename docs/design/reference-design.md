@@ -73,7 +73,9 @@ study, not an Apple product.
 ## 4. Frame and surfaces
 
 - **Rail:** grade-5 titanium, brushed along the long axis, clear coat 0.12,
-  anisotropy 0.65, base roughness 0.28. Colour tint per colourway.
+  anisotropy 0.65, base roughness 0.34, envMapIntensity 0.62: a brushed
+  Dusk Titanium edge with one controlled anisotropic highlight, never a white
+  chrome outline. Colour tint per colourway.
 - **Front/inner glass:** near-black, roughness 0.045, clearcoat 1.0, IOR 1.52,
   faint micro-scratch roughness map (0.015 amplitude).
 - **Rear glass:** matte, roughness 0.42, clearcoat 0.25, subtle 0.06 mm orange-peel

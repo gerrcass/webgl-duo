@@ -247,19 +247,35 @@ function paintAurora(
 
   // Inner home only: a vertical light column through the composition centre.
   // It is deliberately wider than the 10 mm bridge, so the flexible strip has
-  // real aurora colour across it instead of reading as a black gap.
+  // real aurora colour across it instead of reading as a black gap. The extra
+  // warm core is what keeps the wallpaper flowing across the fold rather than
+  // leaving the crease as the darkest part of the frame.
   if (variant === 'inner') {
     context.save();
     context.globalCompositeOperation = 'screen';
-    const spine = context.createLinearGradient(width * 0.5 - width * 0.07, 0, width * 0.5 + width * 0.07, 0);
+    const core = context.createRadialGradient(
+      width * 0.5,
+      height * 0.46,
+      0,
+      width * 0.5,
+      height * 0.46,
+      width * 0.26,
+    );
+    core.addColorStop(0, 'rgba(96, 132, 210, 0.34)');
+    core.addColorStop(0.5, 'rgba(56, 92, 178, 0.16)');
+    core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    context.fillStyle = core;
+    context.fillRect(0, 0, width, height);
+
+    const spine = context.createLinearGradient(width * 0.5 - width * 0.1, 0, width * 0.5 + width * 0.1, 0);
     spine.addColorStop(0, 'rgba(45, 226, 200, 0)');
-    spine.addColorStop(0.36, 'rgba(74, 168, 255, 0.2)');
-    spine.addColorStop(0.5, 'rgba(180, 214, 255, 0.32)');
-    spine.addColorStop(0.64, 'rgba(139, 125, 255, 0.2)');
+    spine.addColorStop(0.3, 'rgba(74, 168, 255, 0.24)');
+    spine.addColorStop(0.5, 'rgba(198, 224, 255, 0.44)');
+    spine.addColorStop(0.7, 'rgba(139, 125, 255, 0.24)');
     spine.addColorStop(1, 'rgba(139, 125, 255, 0)');
     context.fillStyle = spine;
-    context.filter = `blur(${Math.round(width * 0.012)}px)`;
-    context.fillRect(width * 0.5 - width * 0.07, 0, width * 0.14, height);
+    context.filter = `blur(${Math.round(width * 0.014)}px)`;
+    context.fillRect(width * 0.5 - width * 0.1, 0, width * 0.2, height);
     context.filter = 'none';
     context.restore();
   }

@@ -1,6 +1,11 @@
 import { readLaunchOptions } from '../env';
-import { reference, resolveColourway, type ColourwayId } from '../domain/reference';
-import { createDuoApp, type DuoAppSnapshot } from './duo-app';
+import {
+  reference,
+  resolveColourway,
+  type ColourwayId,
+} from '../domain/reference';
+import { QUALITY_IDS, QUALITY_TIERS } from '../domain/quality';
+import { createDuoApp, type DuoApp, type DuoAppSnapshot } from './duo-app';
 import {
   DISCLAIMER,
   describeFold,
@@ -9,6 +14,9 @@ import {
   specRows,
   stageCaption,
 } from './content';
+
+/** The loading budget before the designed fallback takes over. */
+const BOOT_TIMEOUT_MS = 6000;
 
 function requireElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -35,9 +43,9 @@ function renderSpecRows(target: HTMLElement): void {
 }
 
 /**
- * Page bootstrap: fills the spec copy from the reference module, mounts the
- * facade and translates facade status into the page's designed states
- * (loading, live, fallback).
+ * Page bootstrap. It fills every piece of copy from the reference module, owns
+ * the studio controls and translates facade state into the page's designed
+ * states: loading, live, slow, fallback and recovered.
  */
 export function boot(): void {
   const launch = readLaunchOptions();
@@ -49,11 +57,18 @@ export function boot(): void {
   const bootOverlay = requireElement<HTMLElement>('#boot');
   const fallback = requireElement<HTMLElement>('#fallback');
   const fallbackNoteElement = requireElement<HTMLElement>('[data-ref="fallback-note"]');
+  const fallbackSpecs = requireElement<HTMLElement>('[data-ref="fallback-specs"]');
   const liveStatus = requireElement<HTMLElement>('#live-status');
+  const toast = requireElement<HTMLElement>('#toast');
+  const toastText = requireElement<HTMLElement>('[data-ref="toast-text"]');
   const nav = requireElement<HTMLElement>('[data-ref="nav"]');
   const foldSlider = requireElement<HTMLInputElement>('[data-ref="fold-slider"]');
   const foldOutput = requireElement<HTMLOutputElement>('[data-ref="fold-output"]');
   const stageCaptionElement = requireElement<HTMLElement>('[data-ref="stage-caption"]');
+  const swatchRow = requireElement<HTMLElement>('[data-ref="swatch-row"]');
+  const qualitySelect = requireElement<HTMLSelectElement>('[data-ref="quality"]');
+  const qualityHint = requireElement<HTMLElement>('[data-ref="quality-hint"]');
+  const screenshotButton = requireElement<HTMLButtonElement>('[data-ref="screenshot"]');
 
   requireElement<HTMLElement>('[data-ref="hero-meta"]').textContent = heroMeta();
   stageCaptionElement.textContent = stageCaption(
@@ -61,19 +76,67 @@ export function boot(): void {
   );
   requireElement<HTMLElement>('[data-ref="disclaimer"]').textContent = DISCLAIMER;
   renderSpecRows(requireElement<HTMLElement>('[data-ref="specs"]'));
+  renderSpecRows(fallbackSpecs);
 
-  const app = createDuoApp({
-    testMode: launch.testMode,
-    reducedMotion: launch.reducedMotion,
-    forceFallback: launch.forceFallback,
-    quality: launch.quality,
-    rearView: launch.view === 'rear',
-    detailView: launch.view === 'detail',
+  /* ---------------------------------------------------------------------- */
+  /* Controls                                                               */
+  /* ---------------------------------------------------------------------- */
+
+  const swatches = reference.colourways.map((colourway) => {
+    const label = document.createElement('label');
+    label.className = 'swatch';
+    label.dataset.colourway = colourway.id;
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'colourway';
+    input.value = colourway.id;
+    input.className = 'swatch__input';
+    input.dataset.ref = 'colourway';
+    input.setAttribute('aria-label', `${colourway.name} finish`);
+
+    const chip = document.createElement('span');
+    chip.className = 'swatch__chip';
+    chip.style.setProperty('--swatch', colourway.railTint);
+    chip.style.setProperty('--swatch-accent', colourway.accent);
+    chip.setAttribute('aria-hidden', 'true');
+
+    const name = document.createElement('span');
+    name.className = 'swatch__name';
+    name.textContent = colourway.name.replace(' Titanium', '');
+
+    label.append(input, chip, name);
+    return { label, input, id: colourway.id as ColourwayId };
   });
+  swatchRow.append(...swatches.map((swatch) => swatch.label));
 
-  if (launch.testMode || launch.debugMode) {
-    window.__duoApp = app;
-  }
+  qualitySelect.append(
+    ...QUALITY_IDS.map((id) => {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = QUALITY_TIERS[id].label;
+      return option;
+    }),
+  );
+
+  let app: DuoApp | null = null;
+  let unsubscribe: (() => void) | null = null;
+  let bootTimer = 0;
+  let slowTimer = 0;
+  let lastAnnouncedColour: ColourwayId | null = null;
+
+  const announce = (message: string): void => {
+    liveStatus.textContent = message;
+  };
+
+  const showToast = (message: string): void => {
+    toastText.textContent = message;
+    toast.hidden = false;
+  };
+
+  const hideToast = (): void => {
+    toast.hidden = true;
+  };
 
   const applyAccent = (colourway: ColourwayId): void => {
     const palette = resolveColourway(colourway);
@@ -87,8 +150,6 @@ export function boot(): void {
     root.style.setProperty('--accent-glow', `rgba(${red}, ${green}, ${blue}, 0.35)`);
     body.dataset.colourway = palette.id;
   };
-
-  let bootTimer = 0;
 
   const hideBoot = (immediately: boolean): void => {
     window.clearTimeout(bootTimer);
@@ -109,8 +170,18 @@ export function boot(): void {
     fallback.hidden = false;
     fallbackNoteElement.textContent = fallbackNote(snapshot);
     hideBoot(true);
-    liveStatus.textContent =
-      'The interactive 3D studio is unavailable. The designed poster and specifications are shown instead.';
+    announce(
+      'The interactive 3D studio is unavailable. The designed poster and full specification are shown instead.',
+    );
+    if (snapshot.fallbackReason === 'context-lost') {
+      showToast(
+        'The GPU context was interrupted. Restoring the studio — the poster and specification stay available.',
+      );
+    } else if (snapshot.fallbackReason === 'timeout') {
+      showToast(
+        'The studio is taking longer than expected. The designed poster is shown while it finishes.',
+      );
+    }
   };
 
   const syncFoldControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
@@ -121,6 +192,17 @@ export function boot(): void {
     stageCaptionElement.textContent = stageCaption(degrees);
   };
 
+  const syncColourControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    for (const swatch of swatches) {
+      swatch.input.checked = swatch.id === snapshot.colourway;
+    }
+  };
+
+  const syncQualityControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    qualitySelect.value = snapshot.quality;
+    qualityHint.textContent = QUALITY_TIERS[snapshot.quality].description;
+  };
+
   const snapToDetent = (value: number): number => {
     for (const detent of reference.hinge.detentsDegrees) {
       if (Math.abs(value - detent) <= 2) return detent;
@@ -128,50 +210,166 @@ export function boot(): void {
     return value;
   };
 
-  foldSlider.addEventListener('input', () => {
-    const value = snapToDetent(Number(foldSlider.value));
-    app.setFoldAngle(value);
-  });
+  const armSlowTimer = (): void => {
+    window.clearTimeout(slowTimer);
+    slowTimer = window.setTimeout(() => {
+      if (!app || app.getState().status === 'ready') return;
+      body.dataset.slow = 'true';
+      showFallback({ ...app.getState(), status: 'fallback', fallbackReason: 'timeout' });
+    }, BOOT_TIMEOUT_MS);
+  };
 
   const update = (snapshot: Readonly<DuoAppSnapshot>): void => {
     syncFoldControl(snapshot);
+    syncColourControl(snapshot);
+    syncQualityControl(snapshot);
     applyAccent(snapshot.colourway);
+
     if (snapshot.status === 'fallback') {
       showFallback(snapshot);
       return;
     }
 
     if (snapshot.status === 'ready') {
+      window.clearTimeout(slowTimer);
+      const recovered = body.classList.contains('is-fallback');
       body.classList.add('is-ready');
       body.classList.remove('is-fallback');
+      delete body.dataset.slow;
       body.dataset.fallbackReason = '';
       stage.hidden = false;
       fallback.hidden = true;
-      liveStatus.textContent =
-        'The live iPhone Duo studio is ready. Use the page sections to read the design and specification.';
+      hideToast();
+      if (lastAnnouncedColour === null) {
+        announce(
+          'The live iPhone Duo studio is ready. Use the studio controls, or the page sections, to read the design and specification.',
+        );
+      } else if (recovered) {
+        announce('The studio is live again.');
+      }
+      lastAnnouncedColour = snapshot.colourway;
       hideBoot(launch.testMode || launch.reducedMotion);
     }
   };
 
-  app.subscribe(update);
-  syncFoldControl(app.getState());
-  applyAccent(app.getState().colourway);
+  const startStudio = (): void => {
+    unsubscribe?.();
+    unsubscribe = null;
+    app?.dispose();
+    app = null;
+    stage.replaceChildren();
 
-  try {
-    app.mount(stage);
-  } catch {
-    // Defensive: the facade already converts expected failures into its
-    // fallback state. This catches a page-integration mistake without leaving a
-    // blank canvas or an unhandled error.
-    showFallback({
-      ...app.getState(),
-      status: 'fallback',
-      fallbackReason: 'mount-failed',
+    app = createDuoApp({
+      testMode: launch.testMode,
+      reducedMotion: launch.reducedMotion,
+      forceFallback: launch.forceFallback,
+      quality: launch.quality,
+      rearView: launch.view === 'rear',
+      detailView: launch.view === 'detail',
     });
-    return;
+
+    if (launch.testMode || launch.debugMode) {
+      window.__duoApp = app;
+    }
+
+    unsubscribe = app.subscribe(update);
+    update(app.getState());
+
+    try {
+      app.mount(stage);
+    } catch {
+      // Defensive: the facade already converts expected failures into its
+      // fallback state. This catches a page-integration mistake without leaving
+      // a blank canvas or an unhandled error.
+      showFallback({
+        ...app.getState(),
+        status: 'fallback',
+        fallbackReason: 'mount-failed',
+      });
+      return;
+    }
+
+    update(app.getState());
+    armSlowTimer();
+  };
+
+  /* ---------------------------------------------------------------------- */
+  /* Wiring                                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  foldSlider.addEventListener('input', () => {
+    app?.setFoldAngle(snapToDetent(Number(foldSlider.value)));
+  });
+
+  foldSlider.addEventListener('change', () => {
+    const degrees = Math.round(app?.getState().foldAngle ?? Number(foldSlider.value));
+    announce(`Hinge at ${describeFold(degrees)}.`);
+  });
+
+  for (const swatch of swatches) {
+    swatch.input.addEventListener('change', () => {
+      app?.setColourway(swatch.id);
+      const name = resolveColourway(swatch.id).name;
+      announce(`${name} finish selected. The device and interface accent updated.`);
+    });
   }
 
-  update(app.getState());
+  qualitySelect.addEventListener('change', () => {
+    app?.setQuality(qualitySelect.value as (typeof QUALITY_IDS)[number]);
+    announce(
+      `${QUALITY_TIERS[qualitySelect.value as (typeof QUALITY_IDS)[number]].label} quality selected.`,
+    );
+  });
+
+  screenshotButton.addEventListener('click', async () => {
+    if (!app || screenshotButton.getAttribute('aria-busy') === 'true') return;
+    screenshotButton.setAttribute('aria-busy', 'true');
+    try {
+      const blob = await app.captureScreenshot();
+      if (!blob) {
+        announce('The still could not be captured. The studio is not rendering.');
+        return;
+      }
+      if (launch.testMode || launch.debugMode) {
+        window.__duoLastScreenshot = blob;
+        body.dataset.capture = String(blob.size);
+      }
+      const degrees = Math.round(app.getState().foldAngle);
+      const filename = `iphone-duo-${app.getState().colourway}-${degrees}deg.png`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.rel = 'noopener';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+      announce(`Still captured and saved as ${filename}.`);
+    } finally {
+      screenshotButton.removeAttribute('aria-busy');
+    }
+  });
+
+  // Synthetic and real context loss both land here. The facade already turns a
+  // lost context into its fallback state, so this only owns the notice and the
+  // recovery remount.
+  stage.addEventListener(
+    'webglcontextlost',
+    () => {
+      body.dataset.context = 'lost';
+    },
+    true,
+  );
+
+  stage.addEventListener(
+    'webglcontextrestored',
+    () => {
+      body.dataset.context = 'restored';
+      startStudio();
+    },
+    true,
+  );
 
   let scrollScheduled = false;
   const updateNav = (): void => {
@@ -188,4 +386,12 @@ export function boot(): void {
     { passive: true },
   );
   updateNav();
+
+  startStudio();
+}
+
+declare global {
+  interface Window {
+    __duoLastScreenshot?: Blob;
+  }
 }
