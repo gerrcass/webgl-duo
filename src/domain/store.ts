@@ -17,7 +17,7 @@ export const PRESET_IDS = ['hero', 'profile', 'detail'] as const;
 export type PresetId = (typeof PRESET_IDS)[number];
 
 export interface DuoState {
-  /** Degrees of closure: 0° is flat, 180° is fully closed. */
+  /** Degrees of openness: 0° is fully closed, 180° is flat and open. */
   readonly foldAngle: number;
   readonly colourway: ColourwayId;
   readonly preset: PresetId;

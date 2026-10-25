@@ -128,7 +128,9 @@ Triple cluster in the plateau, triangular layout, optical axes normal to the rea
 ## 7. Hinge mechanics
 
 - Two pivot barrels, 7.40 mm outer diameter, 148.0 mm long.
-- Rotation: 0° open to 180° closed; UI detents at 30/60/90/120/150.
+- Rotation: 0° fully closed to 180° fully open; UI detents at 30/60/90/120/150.
+  Fold angle is degrees of openness, so the 158° presentation pose is 22° from
+  closed and still shows the inner display alongside the rear design.
 - The display bridge follows a circular arc of radius 1.8 mm; its length is held
   constant (10.0 mm) through the fold so no stretching is visible.
 - Half-to-half clearance at the free edges: 0.28 mm closed.
@@ -228,21 +230,20 @@ The inner display is split at the fold into two rigid panels with inner edges
 5.00 mm from the fold axis; the 10.0 mm bridge spans between them. The bridge
 centreline is a constant-developed-length C1 cubic strip tangent to both panels.
 The solver holds exactly 10.00 mm at every angle (asserted at 0°, 90°, 158° and
-180°). Its solved minimum radius of curvature is:
+180°). Its solved minimum radius of curvature, by openness, is:
 
-| Fold | 30° | 60° | 90° | 158° | 180° |
-|---|---:|---:|---:|---:|---:|
-| Minimum radius (mm) | 4.69 | 1.50 | 0.67 | 0.05 | 0.006 |
+| Fold (openness) | 30° | 60° | 90° | 120° | 158° | 180° |
+|---|---:|---:|---:|---:|---:|---:|
+| Minimum radius (mm) | 0.08 | 0.28 | 0.67 | 1.50 | 8.05 | flat (∞) |
 
-The 1.8 mm figure in §7 is the nominal crease radius; it is met while the bridge
-is a broad arc (about 30°) and is exceeded by the fixed 10.0 mm length as the
-rigid panel edges converge. At 180° the strip is a constant-length hairpin
-between two panels 0.28 mm apart, not a stretched 1.8 mm arc. The mechanical
-constraint that is preserved is the developed length; ticket 05 turns the
-hairpin into the soft optical crease with the crease shader. A future waterdrop
-hinge that dives at the panel edge (rather than staying tangent) is the route to
-a 1.8 mm radius at full closure; it would need a new sheet dimension for the
-dive angle.
+The 1.8 mm figure in §7 is the nominal crease radius; the fixed 10.0 mm length
+crosses it at roughly 123° open (57° from closed) and becomes a broad arc at the
+158° presentation pose. At 0° the strip is a constant-length hairpin between two
+panels 0.28 mm apart, not a stretched 1.8 mm arc. The mechanical constraint that
+is preserved is the developed length; ticket 05 turns the hairpin into the soft
+optical crease with the crease shader. A future waterdrop hinge that dives at the
+panel edge (rather than staying tangent) is the route to a 1.8 mm radius at full
+closure; it would need a new sheet dimension for the dive angle.
 
 ### 11.4 Construction dimensions added by the hinge ticket
 
@@ -277,3 +278,8 @@ number. The plateau centre is derived from the half width and the top inset.
   is not achievable at full closure. Added the construction dimensions in
   §11.4. The hero default is the sheet's 158° presentation angle and the page
   now exposes a 0–180° fold control with detents at 30/60/90/120/150.
+- 2026-10-25 — Fold-angle convention corrected to degrees of **openness**:
+  0° closed, 180° open. The sheet's "158° presentation angle" and user story 8
+  require a hero that shows both the inner display and the rear design, which a
+  158° closure pose cannot do. §7, the bridge table in §11.3 and the page copy
+  now use openness; the mechanical clearances are unchanged at the endpoints.

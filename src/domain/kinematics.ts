@@ -9,6 +9,11 @@
  * Coordinates are metres, with +y up, +x toward the right half's free edge and
  * +z toward the inner display when the device is open. The fold axis is the
  * vertical line x = 0, z = 0.
+ *
+ * Fold angle is degrees of **openness**: 0° is fully closed (halves face to
+ * face), 180° is flat and open. This matches the design sheet's presentation
+ * angle of 158° — a hero that is 22° from closed and therefore still shows the
+ * inner display alongside the rear design.
  */
 
 import { reference } from './reference';
@@ -458,7 +463,9 @@ export function foldSolution(degrees: number): FoldSolution {
   // The left half is the datum. The right half carries the cover display and
   // plateau, so it is the half that swings toward the camera at the presentation
   // angle; that keeps the product's recognisable face in the hero shot.
-  const rightRotation = -foldRadians;
+  // Fold angle is openness, so the right half travels from -180° (closed) to
+  // 180° (flat and open).
+  const rightRotation = -(Math.PI - foldRadians);
   const right: HalfTransform = {
     id: 'right',
     rotationY: rightRotation,
@@ -519,11 +526,11 @@ export function rigBounds(solution: FoldSolution): Bounds3 {
 }
 
 export const openEnvelope = Object.freeze({
-  ...boundsToSize(rigBounds(foldSolution(0))),
+  ...boundsToSize(rigBounds(foldSolution(180))),
 });
 
 export const closedEnvelope = Object.freeze({
-  ...boundsToSize(rigBounds(foldSolution(180))),
+  ...boundsToSize(rigBounds(foldSolution(0))),
 });
 
 function boundsToSize(bounds: Bounds3): {

@@ -27,8 +27,9 @@ area, two rigid panels and a flexible bridge.
 **Cover display** — The display on the outside of the right half, used when the
 device is closed.
 
-**Fold angle** — Degrees of closure measured from flat: 0° is fully open, 180° is
-fully closed. The viewer opens at the *presentation angle* of 158°.
+**Fold angle** — Degrees of openness measured from closed: 0° is fully closed,
+180° is flat and open. The viewer opens at the *presentation angle* of 158°, so
+the hero remains 22° from closed and shows both displays and the rear design.
 
 **Presentation angle** — The default fold angle used for the hero composition.
 Chosen for silhouette, not for any mechanical reason.

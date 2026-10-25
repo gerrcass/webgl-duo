@@ -50,7 +50,7 @@ const FOLD_ANGLES = [0, 30, 60, 90, 120, 150, 158, 180] as const;
 
 describe('hinge kinematics', () => {
   it('open envelope is the sheet 136.60 × 150.40, 5.20 body, 7.15 with plateau', () => {
-    const solution = foldSolution(0);
+    const solution = foldSolution(180);
     const bounds = rigBounds(solution);
 
     expectMm(bounds.max.x - bounds.min.x, SHEET_MM.openWidth);
@@ -61,7 +61,7 @@ describe('hinge kinematics', () => {
   });
 
   it('closed envelope is 72.00 wide, 10.40 thick and 12.35 with the plateau', () => {
-    const solution = foldSolution(180);
+    const solution = foldSolution(0);
     const bounds = rigBounds(solution);
 
     expectMm(bounds.max.x - bounds.min.x, SHEET_MM.closedWidth);
@@ -90,12 +90,12 @@ describe('hinge kinematics', () => {
       SHEET_MM.closedBodyDepth,
       9,
     );
-    expectMm(foldSolution(180).freeEdgeDisplayGap, SHEET_MM.freeEdgeGap, 1e-6);
-    expectMm(foldSolution(180).freeEdgeRailGap, 0, 1e-6);
+    expectMm(foldSolution(0).freeEdgeDisplayGap, SHEET_MM.freeEdgeGap, 1e-6);
+    expectMm(foldSolution(0).freeEdgeRailGap, 0, 1e-6);
   });
 
   it('solves the 0.28 mm display clearance at the free edge when closed', () => {
-    const solution = foldSolution(180);
+    const solution = foldSolution(0);
     const right = solution.display.rightFreeEdge;
     const left = solution.display.leftFreeEdge;
 
@@ -110,18 +110,18 @@ describe('hinge kinematics', () => {
     }
   });
 
-  it('reports the solved crease radius tightening monotonically as it closes', () => {
-    const radii = [30, 60, 90, 120, 150, 158, 180].map(
+  it('reports the solved crease radius opening monotonically from a hairpin', () => {
+    const radii = [0, 30, 60, 90, 120, 150, 158, 180].map(
       (angle) => foldSolution(angle).bridge.minRadius,
     );
     for (let index = 1; index < radii.length; index += 1) {
-      expect(radii[index]!).toBeLessThan(radii[index - 1]!);
+      expect(radii[index]!).toBeGreaterThan(radii[index - 1]!);
     }
-    // At 30° the bridge is a broad 4.7 mm arc; by 180° the fixed 10.0 mm strip
-    // is a hairpin. The sheet's 1.8 mm is the nominal crease radius; §11 records
-    // the solved values and the constant-length trade-off honestly.
-    expect(asMm(radii[0]!)).toBeGreaterThan(SHEET_MM.bendRadius);
-    expect(asMm(radii[radii.length - 1]!)).toBeLessThan(0.1);
+    // Closed, the fixed 10.0 mm strip is a hairpin; at the 158° presentation
+    // pose it is a broad arc. The sheet's 1.8 mm is the nominal crease radius;
+    // §11 records the solved values and the constant-length trade-off honestly.
+    expect(asMm(radii[0]!)).toBeLessThan(0.1);
+    expect(asMm(radii[radii.length - 1]!)).toBeGreaterThan(SHEET_MM.bendRadius);
   });
 
   it('has no half interpenetration at the eight evidence angles', () => {
@@ -141,7 +141,7 @@ describe('hinge kinematics', () => {
   });
 
   it('keeps the plateau inside the closed cover and on the right half', () => {
-    const solution = foldSolution(180);
+    const solution = foldSolution(0);
     const plateau = solution.plateau;
 
     expectMm(plateau.size, SHEET_MM.plateauSize, 1e-9);

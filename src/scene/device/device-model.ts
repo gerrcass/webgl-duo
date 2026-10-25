@@ -10,7 +10,7 @@ import type { ColourwayId } from '../../domain/reference';
  */
 export interface DuoDeviceModel {
   readonly object: Object3D;
-  /** 0° is flat and open, 180° is fully closed. */
+  /** 0° is fully closed, 180° is flat and open. */
   setFoldAngle(degrees: number): void;
   setColourway(colourway: ColourwayId): void;
   setExploded(exploded: boolean): void;

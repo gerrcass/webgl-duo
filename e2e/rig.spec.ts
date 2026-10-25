@@ -79,10 +79,10 @@ test('the hinge rig changes pixels and the accessible fold value', async ({ page
 
   await setFold(page, 0);
   await expect(slider).toHaveValue('0');
-  await expect(slider).toHaveAttribute('aria-valuetext', /0 degrees, flat and open/);
+  await expect(slider).toHaveAttribute('aria-valuetext', /0 degrees, fully closed/);
   await expect(output).toHaveText('0°');
-  const open = await fingerprint(page);
-  await page.screenshot({ path: `${SHOT_DIR}/open.png` });
+  const closed = await fingerprint(page);
+  await page.screenshot({ path: `${SHOT_DIR}/closed.png` });
 
   await setFold(page, 158);
   await expect(slider).toHaveValue('158');
@@ -100,14 +100,14 @@ test('the hinge rig changes pixels and the accessible fold value', async ({ page
   await expect
     .poll(() => page.evaluate(() => window.__duoApp!.getState().foldAngle))
     .toBe(90);
-  await expect(slider).toHaveAttribute('aria-valuetext', /90 degrees closed/);
+  await expect(slider).toHaveAttribute('aria-valuetext', /90 degrees open/);
   const detent = await fingerprint(page);
 
   await setFold(page, 180);
   await expect(slider).toHaveValue('180');
-  await expect(slider).toHaveAttribute('aria-valuetext', /180 degrees, fully closed/);
-  const closed = await fingerprint(page);
-  await page.screenshot({ path: `${SHOT_DIR}/closed.png` });
+  await expect(slider).toHaveAttribute('aria-valuetext', /180 degrees, flat and open/);
+  const open = await fingerprint(page);
+  await page.screenshot({ path: `${SHOT_DIR}/open.png` });
 
   expect(open.bytes).toBeGreaterThan(10_000);
   expect(open.unique).toBeGreaterThan(12);
