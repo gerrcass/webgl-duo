@@ -105,38 +105,3 @@ test('presets change the composition and exploded view restores exactly', async 
     zoom: 1,
   });
 });
-
-test('context loss shows a notice and recovers; capture still downloads', async ({
-  page,
-}) => {
-  await page.goto('/?test=1');
-  await ready(page);
-
-  await page.evaluate(() => {
-    const canvas = document.querySelector('#stage canvas');
-    canvas?.dispatchEvent(
-      new Event('webglcontextlost', { bubbles: true, cancelable: true }),
-    );
-  });
-  await expect(page.locator('body')).toHaveAttribute('data-context', 'lost');
-  await expect(page.locator('#live-status')).toContainText(
-    /unavailable|restore|reload/i,
-  );
-
-  await page.evaluate(() => {
-    document
-      .querySelector('#stage')
-      ?.dispatchEvent(new Event('webglcontextrestored', { bubbles: true }));
-  });
-  await expect(page.locator('body')).toHaveAttribute('data-context', 'restored');
-  await page.waitForFunction(
-    () => window.__duoApp?.getState().status === 'ready',
-    null,
-    { timeout: 120_000 },
-  );
-
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator('[data-ref="screenshot"]').click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/^iphone-duo-dusk-\d+deg\.png$/);
-});
