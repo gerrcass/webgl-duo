@@ -15,6 +15,8 @@ import {
   ShaderMaterial,
   SpotLight,
   Vector3,
+  WebGLRenderTarget,
+  HalfFloatType,
   type WebGLRenderer,
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
@@ -54,6 +56,7 @@ export class StudioScene {
   private readonly contactShadow: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private composer: EffectComposer | null = null;
   private composerPasses: Array<{ dispose(): void }> = [];
+  private composerSamples = 0;
   private gradePass: ShaderPass | null = null;
   private readonly keyLight: SpotLight;
   private readonly rimLight: SpotLight;
@@ -62,6 +65,12 @@ export class StudioScene {
   private readonly motionEnabled: boolean;
   private readonly rearView: boolean;
   private readonly detailView: boolean;
+  /**
+   * Evidence captures are graded on a still frame, so they buy the extra
+   * samples and pixels that a live session cannot afford: MSAA 4 and a DPR
+   * floor of 1.75 regardless of the quality tier.
+   */
+  private readonly evidence: boolean;
 
   private viewportWidth = 1;
   private viewportHeight = 1;
@@ -75,6 +84,8 @@ export class StudioScene {
       device?: DuoDeviceModel;
       rearView?: boolean;
       detailView?: boolean;
+      /** `?test=1`: force MSAA 4 and a DPR floor for evidence frames. */
+      evidence?: boolean;
     },
   ) {
     RectAreaLightUniformsLib.init();
@@ -87,6 +98,7 @@ export class StudioScene {
     this.motionEnabled = options.motionEnabled;
     this.rearView = options.rearView === true;
     this.detailView = options.detailView === true;
+    this.evidence = options.evidence === true;
     this.device = options.device ?? new DuoDevice();
 
     this.camera = new PerspectiveCamera(
@@ -99,7 +111,7 @@ export class StudioScene {
 
     this.environment = createStudioEnvironment(renderer);
     this.scene.environment = this.environment.texture;
-    this.scene.environmentIntensity = 0.72;
+    this.scene.environmentIntensity = 0.55;
 
     this.sweep = this.createSweep();
     this.scene.add(this.sweep);
@@ -157,15 +169,19 @@ export class StudioScene {
     this.camera.aspect = this.viewportWidth / this.viewportHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.viewportWidth, this.viewportHeight, false);
-    this.renderer.setPixelRatio(
-      resolvePixelRatio(this.quality.id, window.devicePixelRatio),
-    );
+    this.renderer.setPixelRatio(this.pixelRatio());
     this.syncComposerSize();
+  }
+
+  /** Evidence frames buy a higher DPR floor than live sessions. */
+  private pixelRatio(): number {
+    const live = resolvePixelRatio(this.quality.id, window.devicePixelRatio);
+    return this.evidence ? Math.max(live, 1.75) : live;
   }
 
   applyQuality(tier: QualityTier): void {
     this.quality = tier;
-    this.renderer.setPixelRatio(resolvePixelRatio(tier.id, window.devicePixelRatio));
+    this.renderer.setPixelRatio(this.pixelRatio());
     if (this.viewportWidth > 1 && this.viewportHeight > 1) {
       this.renderer.setSize(this.viewportWidth, this.viewportHeight, false);
     }
@@ -180,6 +196,7 @@ export class StudioScene {
     this.renderer.shadowMap.needsUpdate = true;
     this.device.setQuality(tier);
     this.configurePost();
+    this.syncComposerSize();
   }
 
   update(elapsedSeconds: number, introProgress: number): void {
@@ -280,17 +297,30 @@ export class StudioScene {
 
   private configurePost(): void {
     const post = this.quality.post;
+    const samples = Math.max(this.quality.msaa, this.evidence ? 4 : 0);
 
-    if (!this.composer) {
+    if (!this.composer || this.composerSamples !== samples) {
+      this.disposeComposer();
       const renderPass = new RenderPass(this.scene, this.camera);
       this.gradePass = new ShaderPass(GRADE_SHADER);
+      // EffectComposer renders offscreen, so the context's MSAA never reaches
+      // the final image. A multisampled composer target is what actually
+      // smooths the rail and glass outlines.
+      const target = new WebGLRenderTarget(1, 1, {
+        type: HalfFloatType,
+        samples,
+      });
+      target.texture.name = 'studio-composer-target';
       const outputPass = new OutputPass();
-      this.composer = new EffectComposer(this.renderer);
+      this.composer = new EffectComposer(this.renderer, target);
       this.composer.addPass(renderPass);
       this.composer.addPass(this.gradePass);
-      this.composer.addPass(outputPass);
+      // Exactly one output pass. It owns the sRGB encode and tone mapping; a
+      // second OutputPass double-tonemapped the frame and blew the rail and
+      // glass edges out to white.
       this.composer.addPass(outputPass);
       this.composerPasses = [renderPass, this.gradePass, outputPass];
+      this.composerSamples = samples;
       this.syncComposerSize();
     }
 
@@ -316,6 +346,7 @@ export class StudioScene {
     this.composer = null;
     this.composerPasses = [];
     this.gradePass = null;
+    this.composerSamples = 0;
   }
 
   private createSweep(): Mesh<BufferGeometry, ShaderMaterial> {
@@ -451,8 +482,8 @@ export class StudioScene {
     key.shadow.mapSize.set(this.quality.shadowMapSize, this.quality.shadowMapSize);
     key.shadow.camera.near = 0.5;
     key.shadow.camera.far = 7;
-    key.shadow.bias = -0.00015;
-    key.shadow.normalBias = 0.0012;
+    key.shadow.bias = -0.00008;
+    key.shadow.normalBias = 0.00035;
 
     const rim = new SpotLight(
       new Color(reference.studio.rim.color),

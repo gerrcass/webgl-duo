@@ -58,10 +58,10 @@ export const QUALITY_TIERS: Record<QualityTierId, QualityTier> = {
     environmentSize: 512,
     post: {
       bloom: true,
-      bloomStrength: 0.38,
-      bloomRadius: 0.55,
+      bloomStrength: 0.3,
+      bloomRadius: 0.5,
       vignette: true,
-      grain: 0.045,
+      grain: 0.05,
       depthOfField: true,
     },
   },
@@ -78,10 +78,12 @@ export const QUALITY_TIERS: Record<QualityTierId, QualityTier> = {
     environmentSize: 256,
     post: {
       bloom: true,
-      bloomStrength: 0.22,
-      bloomRadius: 0.45,
+      bloomStrength: 0.2,
+      bloomRadius: 0.42,
       vignette: true,
-      grain: 0.025,
+      // Feeds the grade shader's 0.18 gain: 0.04 → ~0.0072, a fine still-film
+      // grain rather than the speckle that read as edge aliasing.
+      grain: 0.04,
       depthOfField: false,
     },
   },

@@ -112,6 +112,8 @@ export function fallbackNote(snapshot: Pick<DuoAppSnapshot, 'fallbackReason'>): 
       return 'The interactive studio is disabled for this test run. The designed poster and specification below stand in for the live canvas.';
     case 'mount-failed':
       return 'The 3D studio could not start on this device. The designed poster and specification below stand in for the live canvas.';
+    case 'timeout':
+      return 'The 3D studio is taking longer than expected to start. The designed poster and specification below stand in for the live canvas while it finishes.';
     case 'webgl2-unavailable':
       return 'This browser does not expose WebGL2. The designed poster and specification below stand in for the live studio.';
     default:

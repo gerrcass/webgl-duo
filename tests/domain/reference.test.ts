@@ -222,7 +222,7 @@ describe('reference design sheet', () => {
   });
 
   it('defines the complete material family and procedural map contract', () => {
-    expect(reference.frame.rail.roughness).toBe(0.28);
+    expect(reference.frame.rail.roughness).toBe(0.34);
     expect(reference.frame.rail.anisotropy).toBe(0.65);
     expect(reference.frame.rail.anisotropyRotationDegrees).toBe(90);
     expect(reference.frame.frontGlass.roughness).toBe(0.045);

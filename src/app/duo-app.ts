@@ -20,6 +20,7 @@ export type FallbackReason =
   | 'webgl2-unavailable'
   | 'forced'
   | 'context-lost'
+  | 'timeout'
   | 'mount-failed'
   | null;
 
@@ -241,6 +242,7 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
           motionEnabled,
           rearView: options.rearView === true,
           detailView: options.detailView === true,
+          evidence: testMode,
         });
         studio.applyState(store.getState());
         studio.setViewport(

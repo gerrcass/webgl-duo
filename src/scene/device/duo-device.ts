@@ -53,11 +53,24 @@ const BODY_RADII: CornerRadii = [
   reference.body.hingeEndCornerRadius,
 ];
 
-const GLASS_WIDTH = reference.body.halfWidth - 2 * reference.body.glassInset;
-const GLASS_HEIGHT = reference.envelope.height - 2 * reference.body.glassInset;
-const GLASS_RADII: CornerRadii = BODY_RADII.map((radius) =>
-  Math.max(0, radius - reference.body.glassInset),
+/**
+ * The rail opening and the glass plate must not share an outline. When they are
+ * exactly coincident the two edges land on the same depth and sample the same
+ * pixels, which is what produced the dashed white stipple around both rails.
+ * Tucking each glass edge 0.4 mm under the rail lip hides it behind the rail's
+ * front face and leaves a single, clean titanium edge.
+ */
+const GLASS_TUCK = 0.0004;
+const GLASS_PLATE_WIDTH =
+  reference.body.halfWidth - 2 * reference.body.glassInset + 2 * GLASS_TUCK;
+const GLASS_PLATE_HEIGHT =
+  reference.envelope.height - 2 * reference.body.glassInset + 2 * GLASS_TUCK;
+const GLASS_PLATE_RADII: CornerRadii = BODY_RADII.map((radius) =>
+  Math.max(0, radius - reference.body.glassInset + GLASS_TUCK),
 ) as unknown as CornerRadii;
+
+/** One outline sampling budget for the rail opening and every glass plate. */
+const OUTLINE_SEGMENTS = 20;
 
 const BRIDGE_WIDTH = reference.hinge.bridgeLength;
 const PANEL_INNER = BRIDGE_WIDTH / 2;
@@ -125,6 +138,7 @@ export class DuoDevice implements DuoDeviceModel {
   private readonly leftHalf = new Group();
   private readonly rightHalf = new Group();
   private readonly bridge: Mesh<BufferGeometry, MeshPhysicalMaterial>;
+  private readonly bridgeMaterial: MeshPhysicalMaterial;
   private readonly bridgeGeometry: BufferGeometry;
   private readonly bridgePositions: Float32BufferAttribute;
   private readonly bridgeUvs: Float32BufferAttribute;
@@ -193,21 +207,34 @@ export class DuoDevice implements DuoDeviceModel {
       glassInset: reference.body.glassInset,
       roundOver: reference.body.railRoundOver,
       chamfer: reference.body.railChamfer,
+      cornerSegments: OUTLINE_SEGMENTS,
     });
     this.geometries.push(railGeometry);
     railGeometry.translate(RIGHT_BODY_CENTRE_X, BODY_CENTRE_Y, 0);
 
-    const glassShape = createRoundedRectShape(GLASS_WIDTH, GLASS_HEIGHT, GLASS_RADII);
+    const glassShape = createRoundedRectShape(
+      GLASS_PLATE_WIDTH,
+      GLASS_PLATE_HEIGHT,
+      GLASS_PLATE_RADII,
+    );
     const frontGlass = this.plate(glassShape, -reference.body.displayRecess);
     const rearGlass = this.plate(glassShape, -reference.envelope.bodyDepth + 0.001);
 
     const panelShape = createRoundedRectShape(PANEL_WIDTH, DISPLAY_HEIGHT, DISPLAY_RADII);
-    const panelGeometry = createRoundedPlateGeometry(panelShape, INNER_PANEL_Z);
+    const panelGeometry = createRoundedPlateGeometry(
+      panelShape,
+      INNER_PANEL_Z,
+      OUTLINE_SEGMENTS,
+    );
     panelGeometry.translate(PANEL_CENTRE_X, BODY_CENTRE_Y, 0);
     this.mapPanelUvs(panelGeometry);
     this.geometries.push(panelGeometry);
 
-    const innerGlassGeometry = createRoundedPlateGeometry(panelShape, INNER_GLASS_Z);
+    const innerGlassGeometry = createRoundedPlateGeometry(
+      panelShape,
+      INNER_GLASS_Z,
+      OUTLINE_SEGMENTS,
+    );
     innerGlassGeometry.translate(PANEL_CENTRE_X, BODY_CENTRE_Y, 0);
     this.geometries.push(innerGlassGeometry);
 
@@ -283,7 +310,18 @@ export class DuoDevice implements DuoDeviceModel {
     this.bridgeUvs = this.bridgeGeometry.getAttribute(
       'uv',
     ) as Float32BufferAttribute;
-    this.bridge = new Mesh(this.bridgeGeometry, displayMaterial);
+    // The bridge faces into the crease, so it loses most of its environmental
+    // light. A dedicated copy of the display material lifts its emission and
+    // drops the glassy sheen; the wallpaper then reads continuously across the
+    // fold instead of falling into a black band.
+    this.bridgeMaterial = displayMaterial.clone();
+    this.bridgeMaterial.name = 'duo-os-bridge-display';
+    this.bridgeMaterial.emissiveIntensity = reference.display.bridgeEmissiveGain;
+    this.bridgeMaterial.envMapIntensity = 0;
+    this.bridgeMaterial.specularIntensity = 0;
+    this.bridgeMaterial.clearcoat = 0;
+    this.materials.push(this.bridgeMaterial);
+    this.bridge = new Mesh(this.bridgeGeometry, this.bridgeMaterial);
     this.bridge.name = 'display-bridge';
     this.bridge.frustumCulled = false;
     this.bridge.castShadow = false;
@@ -396,7 +434,10 @@ export class DuoDevice implements DuoDeviceModel {
     const rail = new Mesh(parts.rail, this.railMaterial);
     rail.name = 'titanium-rail';
     rail.castShadow = true;
-    rail.receiveShadow = true;
+    // A 0.55 mm round-over cannot sample its own 2048² PCF map without
+    // speckling along the silhouette, so the rail receives no shadow of its
+    // own. The cast shadow still lands on the floor and the rear glass.
+    rail.receiveShadow = false;
 
     const front = new Mesh(parts.frontGlass, this.frontGlassMaterial);
     front.name = 'inner-glass';
