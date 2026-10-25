@@ -32,6 +32,8 @@ export interface DuoAppOptions {
   readonly forceFallback?: boolean;
   /** Initial tier; untrusted strings fall back to Balanced. */
   readonly quality?: string;
+  /** Evidence-only rear azimuth; does not change the device pose or defaults. */
+  readonly rearView?: boolean;
 }
 
 export interface DuoAppSnapshot extends DuoState {
@@ -223,7 +225,10 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
 
       try {
         renderer = createStudioRenderer(newCanvas, initialQuality);
-        studio = new StudioScene(renderer, initialQuality, { motionEnabled });
+        studio = new StudioScene(renderer, initialQuality, {
+          motionEnabled,
+          rearView: options.rearView === true,
+        });
         studio.applyState(store.getState());
         studio.setViewport(
           mountContainer.clientWidth || window.innerWidth,

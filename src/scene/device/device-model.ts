@@ -1,5 +1,6 @@
 import type { Object3D } from 'three';
 import type { ColourwayId } from '../../domain/reference';
+import type { QualityTier } from '../../domain/quality';
 
 /**
  * The seam between the studio and the product.
@@ -13,6 +14,7 @@ export interface DuoDeviceModel {
   /** 0° is fully closed, 180° is flat and open. */
   setFoldAngle(degrees: number): void;
   setColourway(colourway: ColourwayId): void;
+  setQuality(tier: QualityTier): void;
   setExploded(exploded: boolean): void;
   dispose(): void;
 }

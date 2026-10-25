@@ -1,5 +1,5 @@
 import { readLaunchOptions } from '../env';
-import { reference } from '../domain/reference';
+import { reference, resolveColourway, type ColourwayId } from '../domain/reference';
 import { createDuoApp, type DuoAppSnapshot } from './duo-app';
 import {
   DISCLAIMER,
@@ -67,11 +67,25 @@ export function boot(): void {
     reducedMotion: launch.reducedMotion,
     forceFallback: launch.forceFallback,
     quality: launch.quality,
+    rearView: launch.view === 'rear',
   });
 
   if (launch.testMode || launch.debugMode) {
     window.__duoApp = app;
   }
+
+  const applyAccent = (colourway: ColourwayId): void => {
+    const palette = resolveColourway(colourway);
+    const value = palette.accent.replace('#', '');
+    const red = Number.parseInt(value.slice(0, 2), 16);
+    const green = Number.parseInt(value.slice(2, 4), 16);
+    const blue = Number.parseInt(value.slice(4, 6), 16);
+    const root = document.documentElement;
+    root.style.setProperty('--accent', palette.accent);
+    root.style.setProperty('--accent-soft', `rgba(${red}, ${green}, ${blue}, 0.16)`);
+    root.style.setProperty('--accent-glow', `rgba(${red}, ${green}, ${blue}, 0.35)`);
+    body.dataset.colourway = palette.id;
+  };
 
   let bootTimer = 0;
 
@@ -120,6 +134,7 @@ export function boot(): void {
 
   const update = (snapshot: Readonly<DuoAppSnapshot>): void => {
     syncFoldControl(snapshot);
+    applyAccent(snapshot.colourway);
     if (snapshot.status === 'fallback') {
       showFallback(snapshot);
       return;
@@ -139,6 +154,7 @@ export function boot(): void {
 
   app.subscribe(update);
   syncFoldControl(app.getState());
+  applyAccent(app.getState().colourway);
 
   try {
     app.mount(stage);

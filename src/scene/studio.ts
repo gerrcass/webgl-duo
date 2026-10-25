@@ -1,10 +1,12 @@
 import {
   AmbientLight,
   BufferGeometry,
+  CanvasTexture,
   Color,
   DoubleSide,
   Float32BufferAttribute,
   Mesh,
+  MeshBasicMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   RectAreaLight,
@@ -16,6 +18,10 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { reference } from '../domain/reference';
 import { resolvePixelRatio, type QualityTier } from '../domain/quality';
 import type { DuoState } from '../domain/store';
@@ -45,6 +51,10 @@ export class StudioScene {
   private readonly environment: StudioEnvironment;
   private readonly sweep: Mesh<BufferGeometry, ShaderMaterial>;
   private readonly shadowCatcher: Mesh<PlaneGeometry, ShadowMaterial>;
+  private readonly contactShadow: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  private composer: EffectComposer | null = null;
+  private composerPasses: Array<{ dispose(): void }> = [];
+  private gradePass: ShaderPass | null = null;
   private readonly keyLight: SpotLight;
   private readonly rimLight: SpotLight;
   private readonly keyArea: RectAreaLight;
@@ -58,7 +68,7 @@ export class StudioScene {
   constructor(
     renderer: WebGLRenderer,
     quality: QualityTier,
-    options: { motionEnabled: boolean; device?: DuoDeviceModel },
+    options: { motionEnabled: boolean; device?: DuoDeviceModel; rearView?: boolean },
   ) {
     RectAreaLightUniformsLib.init();
 
@@ -77,13 +87,16 @@ export class StudioScene {
 
     this.environment = createStudioEnvironment(renderer);
     this.scene.environment = this.environment.texture;
-    this.scene.environmentIntensity = 1.05;
+    this.scene.environmentIntensity = 0.72;
 
     this.sweep = this.createSweep();
     this.scene.add(this.sweep);
 
     this.shadowCatcher = this.createShadowCatcher();
     this.scene.add(this.shadowCatcher);
+
+    this.contactShadow = this.createContactShadow();
+    this.scene.add(this.contactShadow);
 
     const lights = this.createLights();
     this.keyLight = lights.key;
@@ -103,6 +116,7 @@ export class StudioScene {
 
     const tilt = PRODUCT_TILT_RADIANS;
     this.device.object.rotation.x = -tilt;
+    if (options.rearView) this.device.object.rotation.y = Math.PI;
     this.scene.add(this.device.object);
 
     this.applyQuality(quality);
@@ -123,6 +137,7 @@ export class StudioScene {
     this.renderer.setPixelRatio(
       resolvePixelRatio(this.quality.id, window.devicePixelRatio),
     );
+    this.syncComposerSize();
   }
 
   applyQuality(tier: QualityTier): void {
@@ -140,6 +155,8 @@ export class StudioScene {
       }
     }
     this.renderer.shadowMap.needsUpdate = true;
+    this.device.setQuality(tier);
+    this.configurePost();
   }
 
   update(elapsedSeconds: number, introProgress: number): void {
@@ -173,7 +190,11 @@ export class StudioScene {
   }
 
   render(): void {
-    this.renderer.render(this.scene, this.camera);
+    if (this.composer) {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   dispose(): void {
@@ -182,8 +203,95 @@ export class StudioScene {
     this.sweep.material.dispose();
     this.shadowCatcher.geometry.dispose();
     this.shadowCatcher.material.dispose();
+    this.contactShadow.geometry.dispose();
+    this.contactShadow.material.map?.dispose();
+    this.contactShadow.material.dispose();
+    this.disposeComposer();
     this.environment.dispose();
     this.scene.clear();
+  }
+
+  /**
+   * The analytic contact shadow is a baked radial falloff, so it never depends
+   * on shadow-map resolution. The key light's PCFsoft map adds the cast shadow
+   * on top; both are disabled cleanly by the Efficient tier.
+   */
+  private createContactShadow(): Mesh<PlaneGeometry, MeshBasicMaterial> {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('2D canvas is unavailable for the contact shadow');
+    const gradient = context.createRadialGradient(
+      size / 2,
+      size / 2,
+      0,
+      size / 2,
+      size / 2,
+      size / 2,
+    );
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.62)');
+    gradient.addColorStop(0.42, 'rgba(0, 0, 0, 0.34)');
+    gradient.addColorStop(0.75, 'rgba(0, 0, 0, 0.1)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, size, size);
+
+    const texture = new CanvasTexture(canvas);
+    const geometry = new PlaneGeometry(0.42, 0.3);
+    geometry.rotateX(-Math.PI / 2);
+    const material = new MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const mesh = new Mesh(geometry, material);
+    mesh.name = 'analytic-contact-shadow';
+    mesh.position.set(0, 0.0012, 0.015);
+    mesh.renderOrder = 1;
+    return mesh;
+  }
+
+  private configurePost(): void {
+    const post = this.quality.post;
+
+    if (!this.composer) {
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.gradePass = new ShaderPass(GRADE_SHADER);
+      const outputPass = new OutputPass();
+      this.composer = new EffectComposer(this.renderer);
+      this.composer.addPass(renderPass);
+      this.composer.addPass(this.gradePass);
+      this.composer.addPass(outputPass);
+      this.composer.addPass(outputPass);
+      this.composerPasses = [renderPass, this.gradePass, outputPass];
+      this.syncComposerSize();
+    }
+
+    if (this.gradePass) {
+      this.gradePass.uniforms.uVignette!.value = post.vignette ? 0.55 : 0;
+      this.gradePass.uniforms.uGrain!.value = post.grain;
+      this.gradePass.uniforms.uBloom!.value = post.bloom ? 1 : 0;
+      this.gradePass.uniforms.uBloomStrength!.value = post.bloomStrength;
+      this.gradePass.uniforms.uBloomRadius!.value = post.bloomRadius;
+    }
+  }
+
+  private syncComposerSize(): void {
+    if (!this.composer) return;
+    this.composer.setPixelRatio(this.renderer.getPixelRatio());
+    this.composer.setSize(this.viewportWidth, this.viewportHeight);
+  }
+
+  private disposeComposer(): void {
+    if (!this.composer) return;
+    this.composer.dispose();
+    for (const pass of this.composerPasses) pass.dispose();
+    this.composer = null;
+    this.composerPasses = [];
+    this.gradePass = null;
   }
 
   private createSweep(): Mesh<BufferGeometry, ShaderMaterial> {
@@ -258,8 +366,6 @@ export class StudioScene {
           color += uPool * backGlow * 0.5;
 
           gl_FragColor = vec4(color, 1.0);
-          #include <tonemapping_fragment>
-          #include <colorspace_fragment>
         }
       `,
       toneMapped: true,
@@ -308,7 +414,7 @@ export class StudioScene {
 
     const key = new SpotLight(
       new Color(reference.studio.key.color),
-      95,
+      42,
       7,
       0.5,
       1,
@@ -326,7 +432,7 @@ export class StudioScene {
 
     const rim = new SpotLight(
       new Color(reference.studio.rim.color),
-      72,
+      30,
       6,
       0.46,
       1,
@@ -344,7 +450,7 @@ export class StudioScene {
 
     const keyArea = new RectAreaLight(
       new Color(reference.studio.key.color),
-      7,
+      3.2,
       reference.studio.key.width,
       reference.studio.key.height,
     );
@@ -354,7 +460,7 @@ export class StudioScene {
 
     const fillArea = new RectAreaLight(
       new Color(reference.studio.fill.color),
-      1.9,
+      0.9,
       reference.studio.fill.width,
       reference.studio.fill.height,
     );
@@ -364,7 +470,7 @@ export class StudioScene {
 
     const scrim = new RectAreaLight(
       new Color(0xdbe5ff),
-      3.4,
+      1.3,
       1.6,
       1,
     );
@@ -372,12 +478,73 @@ export class StudioScene {
     scrim.position.set(0.1, 1.2, 1.5);
     scrim.lookAt(target);
 
-    const ambient = new AmbientLight(0x2b3242, 0.32);
+    const ambient = new AmbientLight(0x2b3242, 0.18);
     ambient.name = 'ambient-lift';
 
     return { key, rim, keyArea, fillArea, scrim, ambient };
   }
 }
+
+/**
+ * A deterministic film treatment. Grain is a static hash of the screen
+ * coordinate, so `?test=1` evidence frames are identical between captures.
+ */
+const GRADE_SHADER = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uVignette: { value: 0.55 },
+    uGrain: { value: 0.025 },
+    uBloom: { value: 1 },
+    uBloomStrength: { value: 0.22 },
+    uBloomRadius: { value: 0.45 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uVignette;
+    uniform float uGrain;
+    uniform float uBloom;
+    uniform float uBloomStrength;
+    uniform float uBloomRadius;
+    varying vec2 vUv;
+
+    float hash(vec2 point) {
+      return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);
+    }
+
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+
+      // A cheap 12-tap glow stands in for a full bloom chain. It is one pass,
+      // works on every GLES3 driver, and its strength/radius come from the
+      // quality tier.
+      if (uBloom > 0.5) {
+        vec3 glow = vec3(0.0);
+        float radius = uBloomRadius * 0.011;
+        for (int index = 0; index < 12; index += 1) {
+          float angle = 6.2831853 * float(index) / 12.0;
+          vec2 offset = vec2(cos(angle), sin(angle)) * radius;
+          vec3 sampleColor = texture2D(tDiffuse, vUv + offset).rgb;
+          glow += max(sampleColor - vec3(0.82), vec3(0.0));
+        }
+        color.rgb += (glow / 12.0) * uBloomStrength * 0.45;
+      }
+
+      float radial = 1.0 - smoothstep(0.16, 0.85, distance(vUv, vec2(0.5)));
+      color.rgb *= mix(1.0, radial, uVignette);
+      float grain = (hash(floor(vUv * vec2(1920.0, 1080.0))) - 0.5) * uGrain * 0.18;
+      color.rgb += grain;
+      gl_FragColor = color;
+    }
+  `,
+};
 
 interface SweepPoint {
   readonly y: number;

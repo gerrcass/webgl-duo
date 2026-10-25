@@ -221,6 +221,29 @@ describe('reference design sheet', () => {
     expect(resolveColourway('unknown').id).toBe('dusk');
   });
 
+  it('defines the complete material family and procedural map contract', () => {
+    expect(reference.frame.rail.roughness).toBe(0.28);
+    expect(reference.frame.rail.anisotropy).toBe(0.65);
+    expect(reference.frame.rail.anisotropyRotationDegrees).toBe(90);
+    expect(reference.frame.frontGlass.roughness).toBe(0.045);
+    expect(reference.frame.frontGlass.clearcoat).toBe(1);
+    expect(reference.frame.frontGlass.ior).toBe(1.52);
+    expect(reference.frame.rearGlass.roughness).toBe(0.42);
+    expect(reference.frame.rearGlass.clearcoat).toBe(0.25);
+    expect(asMm(reference.frame.rearGlass.orangePeel)).toBeCloseTo(0.06, 9);
+    expect(reference.plateau.roughness).toBe(0.32);
+    expect(reference.plateau.metalness).toBeGreaterThan(0.9);
+    expect(reference.sapphire.ior).toBeGreaterThan(reference.frame.frontGlass.ior);
+    expect(reference.gasket.metalness).toBe(0);
+    expect(reference.gasket.roughness).toBe(0.85);
+    expect(reference.display.emissiveIntensity).toBeGreaterThan(0);
+    expect(reference.materialMaps.brushedSize).toBeGreaterThanOrEqual(256);
+    expect(reference.materialMaps.brushedSize).toBeLessThanOrEqual(512);
+    expect(reference.materialMaps.scratchSize).toBeGreaterThanOrEqual(256);
+    expect(reference.materialMaps.orangePeelSize).toBeLessThanOrEqual(512);
+    expect(reference.materialMaps.fingerprintSize).toBeLessThanOrEqual(512);
+  });
+
   it('mirrors the studio, camera and port dimensions', () => {
     expect(reference.studio.floorSweep).toBeCloseTo(SHEET_MM.floorSweep, 9);
     expect(reference.studio.key.width).toBeCloseTo(SHEET_MM.keyWidth, 9);

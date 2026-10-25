@@ -4,6 +4,8 @@ export interface LaunchOptions {
   readonly forceFallback: boolean;
   readonly reducedMotion: boolean;
   readonly quality: string | undefined;
+  /** `?view=rear` is an evidence-only camera aid; the product pose is unchanged. */
+  readonly view: 'hero' | 'rear';
 }
 
 interface MediaQueryLike {
@@ -32,5 +34,6 @@ export function readLaunchOptions(
     forceFallback: params.get('fallback') === '1',
     reducedMotion: reducedMotion?.matches === true,
     quality: params.get('quality') ?? undefined,
+    view: params.get('view') === 'rear' ? 'rear' : 'hero',
   };
 }

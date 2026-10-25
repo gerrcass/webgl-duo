@@ -1,6 +1,6 @@
 import {
   ACESFilmicToneMapping,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   SRGBColorSpace,
   WebGLRenderer,
 } from 'three';
@@ -56,7 +56,7 @@ export function createStudioRenderer(
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = reference.studio.exposure;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   renderer.setClearColor(0x050506, 1);
 
   return renderer;

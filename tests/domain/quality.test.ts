@@ -110,6 +110,25 @@ describe('quality tiers', () => {
     expect(resolvePixelRatio('efficient', 1)).toBe(1);
   });
 
+  it('changes every documented budget knob between tiers', () => {
+    const cinematic = resolveQuality('cinematic');
+    const balanced = resolveQuality('balanced');
+    const efficient = resolveQuality('efficient');
+
+    expect(cinematic.maxPixelRatio).toBeGreaterThan(balanced.maxPixelRatio);
+    expect(balanced.maxPixelRatio).toBeGreaterThan(efficient.maxPixelRatio);
+    expect(cinematic.msaa).toBeGreaterThan(balanced.msaa);
+    expect(balanced.msaa).toBeGreaterThan(efficient.msaa);
+    expect(cinematic.shadowMapSize).toBeGreaterThan(balanced.shadowMapSize);
+    expect(balanced.shadowMapSize).toBeGreaterThan(efficient.shadowMapSize);
+    expect(efficient.post.bloom).toBe(false);
+    expect(efficient.post.vignette).toBe(false);
+    expect(efficient.post.grain).toBe(0);
+    expect(balanced.post.bloom).toBe(true);
+    expect(balanced.post.vignette).toBe(true);
+    expect(balanced.post.grain).toBeGreaterThan(0);
+  });
+
   it('narrows unknown values safely', () => {
     expect(isQualityTierId('balanced')).toBe(true);
     expect(isQualityTierId('Balanced')).toBe(false);
@@ -120,7 +139,7 @@ describe('quality tiers', () => {
   it('documents a rationale and a renderer knob for every tier', () => {
     for (const tier of Object.values(QUALITY_TIERS)) {
       expect(tier.description.length).toBeGreaterThan(20);
-      expect(tier.shadowType).toBe('PCFSoft');
+      expect(tier.shadowType).toBe('PCF');
       expect(tier.maxAnisotropy).toBeGreaterThan(0);
       expect(tier.post).toMatchObject({
         bloom: expect.any(Boolean),

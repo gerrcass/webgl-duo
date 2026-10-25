@@ -2,8 +2,6 @@ import {
   BoxGeometry,
   BufferGeometry,
   CanvasTexture,
-  Color,
-  DoubleSide,
   DynamicDrawUsage,
   ExtrudeGeometry,
   Float32BufferAttribute,
@@ -11,7 +9,6 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   SRGBColorSpace,
-  type MeshPhysicalMaterialParameters,
   type Texture,
 } from 'three';
 import {
@@ -25,6 +22,7 @@ import {
   type BridgeSolution,
   type HingeShell,
 } from '../../domain/kinematics';
+import { applyColourway, applyMaterialQuality, createDeviceMaterials, type DeviceMaterials } from '../materials';
 import { createRoundedRectShape } from '../geometry/rounded-rect';
 import {
   createRailFrameGeometry,
@@ -33,6 +31,7 @@ import {
 } from '../geometry/ring-prism';
 import { mirrorGeometryX } from '../geometry/mirror';
 import type { DuoDeviceModel } from './device-model';
+import type { QualityTier } from '../../domain/quality';
 
 const RIGHT_BODY_CENTRE_X = reference.hinge.spineDiameter / 2 + reference.body.halfWidth / 2;
 const BODY_CENTRE_Y = reference.envelope.height / 2;
@@ -95,7 +94,9 @@ export class DuoDevice implements DuoDeviceModel {
   private readonly materials: MeshPhysicalMaterial[] = [];
   private readonly textures: Texture[] = [];
 
+  private readonly materialsByName: DeviceMaterials;
   private readonly railMaterial: MeshPhysicalMaterial;
+  private readonly frontGlassMaterial: MeshPhysicalMaterial;
   private readonly rearGlassMaterial: MeshPhysicalMaterial;
   private readonly plateauMaterial: MeshPhysicalMaterial;
   private readonly spineMaterial: MeshPhysicalMaterial;
@@ -104,60 +105,17 @@ export class DuoDevice implements DuoDeviceModel {
   constructor(colourway: ColourwayId = reference.identity.defaultColourway) {
     const palette = resolveColourway(colourway);
 
-    this.railMaterial = this.material({
-      color: palette.railTint,
-      metalness: 1,
-      roughness: reference.frame.rail.roughness,
-      clearcoat: reference.frame.rail.clearcoat,
-      clearcoatRoughness: 0.18,
-      envMapIntensity: 1.15,
-    });
-    this.rearGlassMaterial = this.material({
-      color: palette.rearGlass,
-      metalness: 0,
-      roughness: reference.frame.rearGlass.roughness,
-      clearcoat: reference.frame.rearGlass.clearcoat,
-      clearcoatRoughness: 0.5,
-      envMapIntensity: 0.9,
-    });
-    this.plateauMaterial = this.material({
-      color: palette.plateauTint,
-      metalness: 0.9,
-      roughness: reference.plateau.roughness,
-      clearcoat: 0.1,
-      envMapIntensity: 1,
-    });
-    this.spineMaterial = this.material({
-      color: new Color(palette.railTint).lerp(new Color(0xffffff), 0.18),
-      metalness: 1,
-      roughness: reference.frame.hingeSpine.roughness,
-      clearcoat: reference.frame.hingeSpine.clearcoat,
-      clearcoatRoughness: 0.02,
-      envMapIntensity: 1,
-    });
-    this.gasketMaterial = this.material({
-      color: 0x050507,
-      metalness: reference.hinge.gasketMetalness,
-      roughness: reference.hinge.gasketRoughness,
-      envMapIntensity: 0.35,
-    });
-
     const displayTexture = this.createDisplayTexture();
-    const displayMaterial = this.material({
-      map: displayTexture,
-      color: 0xffffff,
-      metalness: 0,
-      roughness: 0.38,
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.25,
-      specularIntensity: 0.35,
-      ior: reference.frame.frontGlass.ior,
-      emissive: 0xffffff,
-      emissiveMap: displayTexture,
-      emissiveIntensity: 0.8,
-      envMapIntensity: 0.22,
-      side: DoubleSide,
-    });
+    this.materialsByName = createDeviceMaterials(palette, displayTexture);
+    this.materials.push(...Object.values(this.materialsByName));
+
+    this.railMaterial = this.materialsByName.rail;
+    this.frontGlassMaterial = this.materialsByName.frontGlass;
+    this.rearGlassMaterial = this.materialsByName.rearGlass;
+    this.plateauMaterial = this.materialsByName.plateau;
+    this.spineMaterial = this.materialsByName.spine;
+    this.gasketMaterial = this.materialsByName.gasket;
+    const displayMaterial = this.materialsByName.display;
 
     const railGeometry = createRailFrameGeometry({
       width: reference.body.halfWidth,
@@ -254,13 +212,11 @@ export class DuoDevice implements DuoDeviceModel {
   }
 
   setColourway(colourway: ColourwayId): void {
-    const palette = resolveColourway(colourway);
-    this.railMaterial.color.set(palette.railTint);
-    this.rearGlassMaterial.color.set(palette.rearGlass);
-    this.plateauMaterial.color.set(palette.plateauTint);
-    this.spineMaterial.color
-      .set(palette.railTint)
-      .lerp(new Color(0xffffff), 0.18);
+    applyColourway(this.materialsByName, resolveColourway(colourway));
+  }
+
+  setQuality(tier: QualityTier): void {
+    applyMaterialQuality(this.materialsByName, tier);
   }
 
   setExploded(_exploded: boolean): void {
@@ -276,14 +232,6 @@ export class DuoDevice implements DuoDeviceModel {
     this.geometries.length = 0;
     this.materials.length = 0;
     this.textures.length = 0;
-  }
-
-  private material(
-    parameters: MeshPhysicalMaterialParameters,
-  ): MeshPhysicalMaterial {
-    const material = new MeshPhysicalMaterial(parameters);
-    this.materials.push(material);
-    return material;
   }
 
   private plate(shape: ReturnType<typeof createRoundedRectShape>, z: number): BufferGeometry {
@@ -316,24 +264,13 @@ export class DuoDevice implements DuoDeviceModel {
     rail.castShadow = true;
     rail.receiveShadow = true;
 
-    const front = new Mesh(parts.frontGlass, this.material({
-      color: 0x04050a,
-      metalness: 0,
-      roughness: 0.3,
-      clearcoat: 0.25,
-      clearcoatRoughness: 0.2,
-      specularIntensity: 0.4,
-      ior: reference.frame.frontGlass.ior,
-      envMapIntensity: 0.4,
-      side: DoubleSide,
-    }));
+    const front = new Mesh(parts.frontGlass, this.frontGlassMaterial);
     front.name = 'inner-glass';
     front.castShadow = false;
     front.receiveShadow = false;
 
     const rear = new Mesh(parts.rearGlass, this.rearGlassMaterial);
     rear.name = 'rear-glass';
-    this.rearGlassMaterial.side = DoubleSide;
     rear.castShadow = false;
     rear.receiveShadow = true;
 

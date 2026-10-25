@@ -36,7 +36,7 @@ export interface QualityTier {
   readonly msaa: 0 | 2 | 4;
   /** Square shadow-map edge in texels. */
   readonly shadowMapSize: number;
-  readonly shadowType: 'PCFSoft';
+  readonly shadowType: 'PCF';
   /** Maximum texture anisotropy requested from the renderer. */
   readonly maxAnisotropy: number;
   /** Environment capture resolution, a hint for later material work. */
@@ -53,7 +53,7 @@ export const QUALITY_TIERS: Record<QualityTierId, QualityTier> = {
     maxPixelRatio: 2,
     msaa: 4,
     shadowMapSize: 4096,
-    shadowType: 'PCFSoft',
+    shadowType: 'PCF',
     maxAnisotropy: 8,
     environmentSize: 512,
     post: {
@@ -73,7 +73,7 @@ export const QUALITY_TIERS: Record<QualityTierId, QualityTier> = {
     maxPixelRatio: 1.5,
     msaa: 2,
     shadowMapSize: 2048,
-    shadowType: 'PCFSoft',
+    shadowType: 'PCF',
     maxAnisotropy: 4,
     environmentSize: 256,
     post: {
@@ -93,7 +93,7 @@ export const QUALITY_TIERS: Record<QualityTierId, QualityTier> = {
     maxPixelRatio: 1,
     msaa: 0,
     shadowMapSize: 1024,
-    shadowType: 'PCFSoft',
+    shadowType: 'PCF',
     maxAnisotropy: 2,
     environmentSize: 128,
     post: {
