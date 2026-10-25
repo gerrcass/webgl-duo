@@ -309,6 +309,93 @@ a {
   text-transform: uppercase;
 }
 
+.fold-control {
+  width: min(19rem, 100%);
+  margin-top: clamp(1rem, 2.4vh, 1.6rem);
+}
+
+.fold-control__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fold-control__label,
+.fold-control__value,
+.fold-control__hint {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fold-control__label {
+  color: var(--ink-faint);
+}
+
+.fold-control__value {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.fold-control__slider {
+  width: 100%;
+  height: 1.1rem;
+  margin: 0.55rem 0 0.3rem;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.fold-control__slider::-webkit-slider-runnable-track {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 125, 255, 0.55) 0%,
+    var(--line) 38%,
+    var(--line) 100%
+  );
+}
+
+.fold-control__slider::-moz-range-track {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 125, 255, 0.55) 0%,
+    var(--line) 38%,
+    var(--line) 100%
+  );
+}
+
+.fold-control__slider::-webkit-slider-thumb {
+  width: 0.62rem;
+  height: 0.62rem;
+  margin-top: -0.305rem;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 4px rgba(139, 125, 255, 0.16);
+}
+
+.fold-control__slider::-moz-range-thumb {
+  width: 0.62rem;
+  height: 0.62rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 4px rgba(139, 125, 255, 0.16);
+}
+
+.fold-control__hint {
+  color: var(--ink-faint);
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  line-height: 1.7;
+  text-transform: none;
+}
+
 .scroll-cue {
   display: inline-flex;
   gap: 0.85rem;
@@ -937,6 +1024,12 @@ body.is-ready .hero__copy > :nth-child(5) {
     font-size: 0.5625rem;
     letter-spacing: 0.055em;
     line-height: 1.9;
+  }
+
+  .fold-control {
+    width: 100%;
+    max-width: 22rem;
+    margin-top: 1.1rem;
   }
 
   .scroll-cue {

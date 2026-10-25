@@ -19,10 +19,12 @@ npm run preview      # preview the production build
 
 ## Status
 
-Foundation ticket: Vite/TypeScript/Three.js shell, procedural studio set,
-real-scale machined placeholder device, `DuoApp` facade, quality tiers, fallback
-poster and Playwright smoke. The real device rig, screens and controls arrive in
-later tickets.
+The real two-half shell and hinge rig are in: a machined titanium rail frame,
+inset inner and rear glass, a raised camera plateau, a two-barrel spine and a
+constant-length inner-display bridge solved from one reference sheet. The hero
+opens at the 158° presentation angle; a fold control on the page sweeps the
+hinge from flat (0°) to closed (180°) with detents at 30, 60, 90, 120 and 150.
+Screen artwork and the final material families land in later tickets.
 
 `?test=1` renders a deterministic, motion-free frame for evidence.
 `?fallback=1` exercises the poster shown when WebGL2 is unavailable.

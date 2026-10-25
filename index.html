@@ -69,6 +69,34 @@
             to a single edge.
           </p>
           <p class="hero__meta" data-ref="hero-meta"></p>
+
+          <div class="fold-control" data-ref="fold-control">
+            <div class="fold-control__head">
+              <label class="fold-control__label" for="fold-slider">Hinge pose</label>
+              <output class="fold-control__value" data-ref="fold-output" for="fold-slider">158°</output>
+            </div>
+            <input
+              id="fold-slider"
+              class="fold-control__slider"
+              data-ref="fold-slider"
+              type="range"
+              min="0"
+              max="180"
+              step="1"
+              value="158"
+              list="fold-detents"
+              aria-describedby="fold-hint"
+            />
+            <datalist id="fold-detents">
+              <option value="30"></option>
+              <option value="60"></option>
+              <option value="90"></option>
+              <option value="120"></option>
+              <option value="150"></option>
+            </datalist>
+            <p class="fold-control__hint" id="fold-hint">0° flat · 180° closed · detents at 30, 60, 90, 120, 150</p>
+          </div>
+
           <a class="scroll-cue" href="#design">
             <span class="scroll-cue__line" aria-hidden="true"></span>
             Explore the design
