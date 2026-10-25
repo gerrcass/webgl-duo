@@ -567,7 +567,7 @@ export class StudioScene {
 
     const key = new SpotLight(
       new Color(reference.studio.key.color),
-      30,
+      25,
       7,
       0.5,
       1,
@@ -585,7 +585,7 @@ export class StudioScene {
 
     const rim = new SpotLight(
       new Color(reference.studio.rim.color),
-      21,
+      6,
       6,
       0.46,
       1,
@@ -603,7 +603,7 @@ export class StudioScene {
 
     const keyArea = new RectAreaLight(
       new Color(reference.studio.key.color),
-      2.3,
+      1.0,
       reference.studio.key.width,
       reference.studio.key.height,
     );
@@ -613,7 +613,7 @@ export class StudioScene {
 
     const fillArea = new RectAreaLight(
       new Color(reference.studio.fill.color),
-      0.9,
+      0.6,
       reference.studio.fill.width,
       reference.studio.fill.height,
     );
@@ -623,7 +623,7 @@ export class StudioScene {
 
     const scrim = new RectAreaLight(
       new Color(0xdbe5ff),
-      1.3,
+      0.6,
       1.6,
       1,
     );

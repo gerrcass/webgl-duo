@@ -341,3 +341,13 @@ real plateau; nothing overlaps a lit display with the camera island.
   require a hero that shows both the inner display and the rear design, which a
   158° closure pose cannot do. §7, the bridge table in §11.3 and the page copy
   now use openness; the mechanical clearances are unchanged at the endpoints.
+
+- 2026-10-25 — Art-direction pass after the hero review. The rail moved to a
+  satin Dusk Titanium response (roughness 0.68, envMapIntensity 0.16, tint gain
+  0.58) and the studio softboxes were dimmed to stop the chrome-like white
+  outline; the PMREM and grade now use one output pass and 0.006 Balanced grain.
+  Rail, glass and plate outlines are tessellated at 40 segments. A residual
+  dashed specular seam at the rail/glass silhouette under SwiftShader remains a
+  known follow-up (it is not a geometry crack or a z-fighting artifact). The
+  390 px hero fills more of the stage, but the device still overlaps the
+  headline; the mobile composition needs another art-direction pass.

@@ -87,13 +87,17 @@ export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
   const frontGlass = physical({
     color: 0x04050a,
     metalness: reference.frame.frontGlass.metalness,
-    roughness: reference.frame.frontGlass.roughness,
-    clearcoat: reference.frame.frontGlass.clearcoat,
-    clearcoatRoughness: reference.frame.frontGlass.clearcoatRoughness,
+    // The backing plate is visible as a 2 mm border around the emissive panel.
+    // At 0.045 roughness that border mirrors the rim strip and aliases into a
+    // dashed white outline. The display's own glass overlay keeps the sheet's
+    // glossy reflection; this substrate stays matte so the panel edge reads as
+    // a seam, not a light leak.
+    roughness: 0.12,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.1,
     ior: reference.frame.frontGlass.ior,
-    roughnessMap: maps.scratch,
-    specularIntensity: 1,
-    envMapIntensity: 0.9,
+    specularIntensity: 0.8,
+    envMapIntensity: 0.5,
     side: DoubleSide,
   });
   frontGlass.name = 'ceramic-shield';
