@@ -98,7 +98,7 @@ export const reference = {
     textureScale: 2,
   },
 
-  /** §3.2 Cover display */
+  /** §3.2 Cover display and §11.5 plateau reconciliation. */
   coverDisplay: {
     diagonalInches: 5.9,
     activeWidth: mm(62.8),
@@ -107,11 +107,27 @@ export const reference = {
     resolutionHeight: 2556,
     ppi: 477,
     refreshRate: '1–120 Hz LTPO',
-    cutoutWidth: mm(7.5),
-    cutoutHeight: mm(24.0),
+    /**
+     * §11.5: the pill is 24.0 mm across and 7.5 mm tall. The sheet's
+     * "7.5 × 24.0" is height × width; a 24 mm tall pill is not a camera bar.
+     */
+    cutoutWidth: mm(24.0),
+    cutoutHeight: mm(7.5),
     cutoutTopInset: mm(4.2),
     coverGlassThickness: mm(0.55),
     textureScale: 2,
+    /**
+     * §11.5: the 57.0 mm plateau occupies the rear face from 85.4 mm above the
+     * bottom rail. The cover panel is therefore exposed only below it:
+     * 5.0 mm bottom inset + 79.0 mm visible pane + 1.4 mm black guard band.
+     * The remaining 55.7 mm of the 136.1 mm active area is behind the plateau
+     * and is never lit.
+     */
+    bottomInset: mm(5.0),
+    visibleHeight: mm(79.0),
+    plateauClearance: mm(1.4),
+    hiddenHeight: mm(55.7),
+    cornerRadius: mm(8.5),
   },
 
   /** §4 Frame and surfaces */
@@ -201,11 +217,26 @@ export const reference = {
     metalness: ratio(0),
   },
   display: {
-    /** Emissive placeholder until Ticket 05 draws Duo OS into the panels. */
-    emissiveIntensity: ratio(0.8),
-    glassRoughness: ratio(0.045),
+    /** Emissive display families: the artwork is self-lit, the glass is separate. */
+    emissiveIntensity: ratio(0.92),
+    glassRoughness: ratio(0.08),
     metalness: ratio(0),
     envMapIntensity: ratio(0.22),
+    /** Off-axis emission falloff at 90°; 1.0 would never dim. */
+    offAxisDimFloor: ratio(0.62),
+    offAxisDimExponent: ratio(0.75),
+    /** Soft optical crease over the bridge, never a hard line. */
+    creaseWidth: mm(1.4),
+    creaseStrengthFlat: ratio(0.045),
+    creaseStrengthFolded: ratio(0.16),
+    /** The cover glass is a separate transparent plate over each display. */
+    glassOpacity: ratio(0.065),
+    glassClearcoatRoughness: ratio(0.06),
+    glassEnvMapIntensity: ratio(0.34),
+    /** Construction: keep the panel a hair proud of its rail to avoid z-fighting. */
+    surfaceClearance: mm(0.1),
+    /** Construction: inner cover-glass surface sits this far in front of the panel. */
+    innerGlassGap: mm(0.06),
   },
 
   /** §4 Procedural map construction: sizes are texels, scales are metres. */

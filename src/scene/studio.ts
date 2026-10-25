@@ -60,6 +60,7 @@ export class StudioScene {
   private readonly keyArea: RectAreaLight;
   private readonly fillArea: RectAreaLight;
   private readonly motionEnabled: boolean;
+  private readonly rearView: boolean;
 
   private viewportWidth = 1;
   private viewportHeight = 1;
@@ -75,6 +76,7 @@ export class StudioScene {
     this.renderer = renderer;
     this.quality = quality;
     this.motionEnabled = options.motionEnabled;
+    this.rearView = options.rearView === true;
     this.device = options.device ?? new DuoDevice();
 
     this.camera = new PerspectiveCamera(
@@ -116,7 +118,6 @@ export class StudioScene {
 
     const tilt = PRODUCT_TILT_RADIANS;
     this.device.object.rotation.x = -tilt;
-    if (options.rearView) this.device.object.rotation.y = Math.PI;
     this.scene.add(this.device.object);
 
     this.applyQuality(quality);
@@ -126,6 +127,11 @@ export class StudioScene {
     this.device.setFoldAngle(state.foldAngle);
     this.device.setColourway(state.colourway);
     this.device.setExploded(state.exploded);
+    // Rear evidence view: when the device is closed the cover display already
+    // faces the hero camera, so rotating the whole rig would show the plain
+    // half instead. When open, the rear view shows both outer faces.
+    this.device.object.rotation.y =
+      this.rearView && state.foldAngle > 1 ? Math.PI : 0;
   }
 
   setViewport(width: number, height: number): void {

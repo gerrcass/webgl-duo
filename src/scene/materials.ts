@@ -50,11 +50,10 @@ export interface DeviceMaterials {
   readonly plateau: MeshPhysicalMaterial;
   readonly spine: MeshPhysicalMaterial;
   readonly gasket: MeshPhysicalMaterial;
-  readonly display: MeshPhysicalMaterial;
   readonly sapphire: MeshPhysicalMaterial;
 }
 
-export function createDeviceMaterials(palette: Colourway, displayTexture: Texture): DeviceMaterials {
+export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
   const maps = getMaterialMaps();
   const physical = (parameters: MeshPhysicalMaterialParameters): MeshPhysicalMaterial =>
     new MeshPhysicalMaterial(parameters);
@@ -129,23 +128,6 @@ export function createDeviceMaterials(palette: Colourway, displayTexture: Textur
   });
   gasket.name = 'elastomer-gasket';
 
-  const display = physical({
-    map: displayTexture,
-    color: 0xffffff,
-    metalness: reference.display.metalness,
-    roughness: reference.display.glassRoughness,
-    clearcoat: 0,
-    clearcoatRoughness: 0.1,
-    specularIntensity: 0.35,
-    ior: reference.frame.frontGlass.ior,
-    emissive: 0xffffff,
-    emissiveMap: displayTexture,
-    emissiveIntensity: reference.display.emissiveIntensity,
-    envMapIntensity: 0.05,
-    side: DoubleSide,
-  });
-  display.name = 'display-placeholder';
-
   const sapphire = physical({
     color: 0x06070c,
     metalness: 0,
@@ -157,7 +139,7 @@ export function createDeviceMaterials(palette: Colourway, displayTexture: Textur
   });
   sapphire.name = 'sapphire-lens-cover';
 
-  return { rail, frontGlass, rearGlass, plateau, spine, gasket, display, sapphire };
+  return { rail, frontGlass, rearGlass, plateau, spine, gasket, sapphire };
 }
 
 export function applyColourway(materials: DeviceMaterials, palette: Colourway): void {

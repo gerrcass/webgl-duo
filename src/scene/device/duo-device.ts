@@ -8,7 +8,6 @@ import {
   Group,
   Mesh,
   MeshPhysicalMaterial,
-  SRGBColorSpace,
   type Texture,
 } from 'three';
 import {
@@ -22,7 +21,18 @@ import {
   type BridgeSolution,
   type HingeShell,
 } from '../../domain/kinematics';
+import {
+  innerDisplayMapping,
+  innerUvForX,
+  innerUvForY,
+} from '../../domain/duo-os';
 import { applyColourway, applyMaterialQuality, createDeviceMaterials, type DeviceMaterials } from '../materials';
+import {
+  createDisplayGlass,
+  createDisplaySurface,
+  type DisplaySurface,
+} from '../display/display-material';
+import { createDuoOsScreens } from '../display/duo-os-art';
 import { createRoundedRectShape } from '../geometry/rounded-rect';
 import {
   createRailFrameGeometry,
@@ -67,6 +77,29 @@ const DISPLAY_RADII: CornerRadii = [
 const PLATEAU_CENTRE_Y =
   reference.envelope.height - reference.plateau.topInset - reference.plateau.size / 2;
 
+const COVER_WIDTH = reference.coverDisplay.activeWidth;
+const COVER_HEIGHT = reference.coverDisplay.visibleHeight;
+const COVER_CENTRE_Y = reference.coverDisplay.bottomInset + COVER_HEIGHT / 2;
+const COVER_RADII: CornerRadii = [
+  reference.coverDisplay.cornerRadius,
+  reference.coverDisplay.cornerRadius,
+  reference.coverDisplay.cornerRadius,
+  reference.coverDisplay.cornerRadius,
+];
+
+/**
+ * Panel and overlay sit two microns apart. These are construction epsilons
+ * chosen to beat z-fighting, not product dimensions; the sheet owns the 0.14 mm
+ * display recess that places the whole stack.
+ */
+const PANEL_LIFT = 0.000002;
+const BRIDGE_LIFT = 0.000001;
+
+const INNER_PANEL_Z = -reference.body.displayRecess + PANEL_LIFT;
+const INNER_GLASS_Z = INNER_PANEL_Z + reference.display.innerGlassGap;
+const COVER_PANEL_Z = -reference.envelope.bodyDepth - reference.display.surfaceClearance;
+const COVER_GLASS_Z = COVER_PANEL_Z - reference.coverDisplay.coverGlassThickness;
+
 const BRIDGE_SEGMENTS = 96;
 
 /**
@@ -77,9 +110,10 @@ const BRIDGE_SEGMENTS = 96;
  * anchors and bridge samples come from `domain/kinematics`; this file only
  * turns those numbers into geometry.
  *
- * Ticket 04 owns the final material families and Ticket 05 owns screens, so
- * the materials here are deliberately restrained: titanium, dark glass and a
- * neutral display gradient.
+ * Ticket 05 owns the two Duo OS canvases and the continuous display mapping.
+ * The inner layout is sampled from one canvas: the left rigid panel takes its
+ * 61.3 mm slice, the bridge its 10.0 mm arc-length slice, the right panel the
+ * rest. The cover display is the exposed 62.8 × 79.0 mm pane below the plateau.
  */
 export class DuoDevice implements DuoDeviceModel {
   readonly object = new Group();
@@ -89,6 +123,7 @@ export class DuoDevice implements DuoDeviceModel {
   private readonly bridge: Mesh<BufferGeometry, MeshPhysicalMaterial>;
   private readonly bridgeGeometry: BufferGeometry;
   private readonly bridgePositions: Float32BufferAttribute;
+  private readonly bridgeUvs: Float32BufferAttribute;
 
   private readonly geometries: BufferGeometry[] = [];
   private readonly materials: MeshPhysicalMaterial[] = [];
@@ -102,12 +137,41 @@ export class DuoDevice implements DuoDeviceModel {
   private readonly spineMaterial: MeshPhysicalMaterial;
   private readonly gasketMaterial: MeshPhysicalMaterial;
 
+  private readonly innerSurface: DisplaySurface;
+  private readonly coverSurface: DisplaySurface;
+  private readonly innerGlassMaterial: MeshPhysicalMaterial;
+  private readonly coverGlassMaterial: MeshPhysicalMaterial;
+  private readonly innerTexture: CanvasTexture;
+  private readonly coverTexture: CanvasTexture;
+
   constructor(colourway: ColourwayId = reference.identity.defaultColourway) {
     const palette = resolveColourway(colourway);
 
-    const displayTexture = this.createDisplayTexture();
-    this.materialsByName = createDeviceMaterials(palette, displayTexture);
-    this.materials.push(...Object.values(this.materialsByName));
+    const screens = createDuoOsScreens();
+    this.innerTexture = screens.inner;
+    this.coverTexture = screens.cover;
+    this.textures.push(screens.inner, screens.cover);
+
+    this.materialsByName = createDeviceMaterials(palette);
+    this.innerSurface = createDisplaySurface({
+      texture: screens.inner,
+      crease: true,
+      name: 'duo-os-inner-display',
+    });
+    this.coverSurface = createDisplaySurface({
+      texture: screens.cover,
+      crease: false,
+      name: 'duo-os-cover-display',
+    });
+    this.innerGlassMaterial = createDisplayGlass('inner-cover-glass');
+    this.coverGlassMaterial = createDisplayGlass('cover-cover-glass');
+    this.materials.push(
+      ...Object.values(this.materialsByName),
+      this.innerSurface.material,
+      this.coverSurface.material,
+      this.innerGlassMaterial,
+      this.coverGlassMaterial,
+    );
 
     this.railMaterial = this.materialsByName.rail;
     this.frontGlassMaterial = this.materialsByName.frontGlass;
@@ -115,7 +179,7 @@ export class DuoDevice implements DuoDeviceModel {
     this.plateauMaterial = this.materialsByName.plateau;
     this.spineMaterial = this.materialsByName.spine;
     this.gasketMaterial = this.materialsByName.gasket;
-    const displayMaterial = this.materialsByName.display;
+    const displayMaterial = this.innerSurface.material;
 
     const railGeometry = createRailFrameGeometry({
       width: reference.body.halfWidth,
@@ -134,15 +198,31 @@ export class DuoDevice implements DuoDeviceModel {
     const rearGlass = this.plate(glassShape, -reference.envelope.bodyDepth + 0.001);
 
     const panelShape = createRoundedRectShape(PANEL_WIDTH, DISPLAY_HEIGHT, DISPLAY_RADII);
-    const panelGeometry = createRoundedPlateGeometry(
-      panelShape,
-      -reference.body.displayRecess + 0.002,
-    );
-    this.geometries.push(panelGeometry);
+    const panelGeometry = createRoundedPlateGeometry(panelShape, INNER_PANEL_Z);
     panelGeometry.translate(PANEL_CENTRE_X, BODY_CENTRE_Y, 0);
+    this.mapPanelUvs(panelGeometry);
+    this.geometries.push(panelGeometry);
+
+    const innerGlassGeometry = createRoundedPlateGeometry(panelShape, INNER_GLASS_Z);
+    innerGlassGeometry.translate(PANEL_CENTRE_X, BODY_CENTRE_Y, 0);
+    this.geometries.push(innerGlassGeometry);
 
     const plateauGeometry = this.createPlateauGeometry();
     this.geometries.push(plateauGeometry);
+
+    const coverShape = createRoundedRectShape(COVER_WIDTH, COVER_HEIGHT, COVER_RADII);
+    const coverGeometry = createRoundedPlateGeometry(coverShape, COVER_PANEL_Z, 24);
+    // The cover panel faces rearward. Its plate is authored on +z and viewed
+    // from the back when the right half is closed, so mirror u to keep Duo OS
+    // reading left-to-right instead of backwards.
+    mirrorUvs(coverGeometry);
+    coverGeometry.translate(RIGHT_BODY_CENTRE_X, COVER_CENTRE_Y, 0);
+    this.geometries.push(coverGeometry);
+
+    const coverGlassGeometry = createRoundedPlateGeometry(coverShape, COVER_GLASS_Z, 24);
+    mirrorUvs(coverGlassGeometry);
+    coverGlassGeometry.translate(RIGHT_BODY_CENTRE_X, COVER_CENTRE_Y, 0);
+    this.geometries.push(coverGlassGeometry);
 
     const shellGeometries = HINGE_SHELLS.map((shell) => {
       const geometry = createShellGeometry(shell);
@@ -155,9 +235,15 @@ export class DuoDevice implements DuoDeviceModel {
       frontGlass,
       rearGlass,
       panel: panelGeometry,
+      innerGlass: innerGlassGeometry,
       plateau: plateauGeometry,
       shell: shellGeometries.find((_, index) => HINGE_SHELLS[index]!.half === 'right')!,
       displayMaterial,
+      cover: {
+        panel: coverGeometry,
+        glass: coverGlassGeometry,
+        material: this.coverSurface.material,
+      },
     });
 
     const mirrored = {
@@ -165,17 +251,23 @@ export class DuoDevice implements DuoDeviceModel {
       frontGlass: this.mirror(frontGlass),
       rearGlass: this.mirror(rearGlass),
       panel: this.mirror(panelGeometry),
+      innerGlass: this.mirror(innerGlassGeometry),
       shell: shellGeometries.find((_, index) => HINGE_SHELLS[index]!.half === 'left')!,
     };
+    this.mapPanelUvs(mirrored.panel);
     this.buildHalf(this.leftHalf, {
       ...mirrored,
       plateau: null,
       displayMaterial,
+      cover: null,
     });
 
     this.bridgeGeometry = this.createBridgeGeometry();
     this.bridgePositions = this.bridgeGeometry.getAttribute(
       'position',
+    ) as Float32BufferAttribute;
+    this.bridgeUvs = this.bridgeGeometry.getAttribute(
+      'uv',
     ) as Float32BufferAttribute;
     this.bridge = new Mesh(this.bridgeGeometry, displayMaterial);
     this.bridge.name = 'display-bridge';
@@ -206,9 +298,12 @@ export class DuoDevice implements DuoDeviceModel {
 
   setFoldAngle(degrees: number): void {
     const solution = foldSolution(degrees);
+    const mapping = innerDisplayMapping(solution.foldAngle);
     this.rightHalf.rotation.y = solution.right.rotationY;
     this.leftHalf.rotation.y = solution.left.rotationY;
-    this.updateBridge(solution.bridge);
+    this.innerSurface.setFoldAngle(solution.foldAngle);
+    this.coverSurface.setFoldAngle(solution.foldAngle);
+    this.updateBridge(solution.bridge, mapping.bridgeU);
   }
 
   setColourway(colourway: ColourwayId): void {
@@ -217,6 +312,10 @@ export class DuoDevice implements DuoDeviceModel {
 
   setQuality(tier: QualityTier): void {
     applyMaterialQuality(this.materialsByName, tier);
+    for (const texture of [this.innerTexture, this.coverTexture]) {
+      texture.anisotropy = tier.maxAnisotropy;
+      texture.needsUpdate = true;
+    }
   }
 
   setExploded(_exploded: boolean): void {
@@ -247,6 +346,21 @@ export class DuoDevice implements DuoDeviceModel {
     return mirrored;
   }
 
+  /** Resample a panel's UVs from the one continuous inner layout. */
+  private mapPanelUvs(geometry: BufferGeometry): void {
+    const position = geometry.getAttribute('position');
+    const uv = geometry.getAttribute('uv');
+    if (!uv) throw new Error('inner display panel is missing its uv attribute');
+    for (let index = 0; index < position.count; index += 1) {
+      uv.setXY(
+        index,
+        innerUvForX(position.getX(index)),
+        innerUvForY(position.getY(index)),
+      );
+    }
+    uv.needsUpdate = true;
+  }
+
   private buildHalf(
     group: Group,
     parts: {
@@ -254,9 +368,15 @@ export class DuoDevice implements DuoDeviceModel {
       frontGlass: BufferGeometry;
       rearGlass: BufferGeometry;
       panel: BufferGeometry;
+      innerGlass: BufferGeometry;
       plateau: BufferGeometry | null;
       shell: BufferGeometry;
       displayMaterial: MeshPhysicalMaterial;
+      cover: {
+        panel: BufferGeometry;
+        glass: BufferGeometry;
+        material: MeshPhysicalMaterial;
+      } | null;
     },
   ): void {
     const rail = new Mesh(parts.rail, this.railMaterial);
@@ -279,18 +399,38 @@ export class DuoDevice implements DuoDeviceModel {
     panel.castShadow = false;
     panel.receiveShadow = false;
 
+    const innerGlass = new Mesh(parts.innerGlass, this.innerGlassMaterial);
+    innerGlass.name = 'inner-display-glass';
+    innerGlass.renderOrder = 2;
+    innerGlass.castShadow = false;
+    innerGlass.receiveShadow = false;
+
     const shell = new Mesh(parts.shell, this.spineMaterial);
     shell.name = 'hinge-barrel';
     shell.castShadow = true;
     shell.receiveShadow = true;
 
-    group.add(rail, rear, front, panel, shell);
+    group.add(rail, rear, front, panel, innerGlass, shell);
     if (parts.plateau) {
       const plateau = new Mesh(parts.plateau, this.plateauMaterial);
       plateau.name = 'camera-plateau';
       plateau.castShadow = true;
       plateau.receiveShadow = true;
       group.add(plateau);
+    }
+    if (parts.cover) {
+      const cover = new Mesh(parts.cover.panel, parts.cover.material);
+      cover.name = 'cover-display';
+      cover.castShadow = false;
+      cover.receiveShadow = false;
+
+      const coverGlass = new Mesh(parts.cover.glass, this.coverGlassMaterial);
+      coverGlass.name = 'cover-display-glass';
+      coverGlass.renderOrder = 2;
+      coverGlass.castShadow = false;
+      coverGlass.receiveShadow = false;
+
+      group.add(cover, coverGlass);
     }
   }
 
@@ -331,75 +471,50 @@ export class DuoDevice implements DuoDeviceModel {
       indices.push(a, b, c, b, d, c);
     }
     for (let index = 0; index <= BRIDGE_SEGMENTS; index += 1) {
-      const u = index / BRIDGE_SEGMENTS;
-      uvs[index * 2] = u;
-      uvs[index * 2 + 1] = 0;
-      uvs[index * 2 + 2] = u;
-      uvs[index * 2 + 3] = 1;
+      uvs[index * 4 + 1] = 0;
+      uvs[index * 4 + 3] = 1;
     }
 
     geometry.setAttribute(
       'position',
       new Float32BufferAttribute(positions, 3).setUsage(DynamicDrawUsage),
     );
-    geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+    geometry.setAttribute(
+      'uv',
+      new Float32BufferAttribute(uvs, 2).setUsage(DynamicDrawUsage),
+    );
     geometry.setIndex(indices);
     geometry.computeBoundingSphere();
     return geometry;
   }
 
-  private updateBridge(bridge: BridgeSolution): void {
+  private updateBridge(bridge: BridgeSolution, u: readonly number[]): void {
     const positions = this.bridgePositions;
-    const count = bridge.points.length;
+    const uvs = this.bridgeUvs;
+    const count = Math.min(bridge.points.length, u.length);
     for (let index = 0; index < count; index += 1) {
       const point = bridge.points[index]!;
-      positions.setXYZ(index * 2, point.x, DISPLAY_BOTTOM, point.z + 0.002);
-      positions.setXYZ(index * 2 + 1, point.x, DISPLAY_TOP, point.z + 0.002);
+      positions.setXYZ(index * 2, point.x, DISPLAY_BOTTOM, point.z + BRIDGE_LIFT);
+      positions.setXYZ(index * 2 + 1, point.x, DISPLAY_TOP, point.z + BRIDGE_LIFT);
+      const across = u[index]!;
+      uvs.setXY(index * 2, across, 0);
+      uvs.setXY(index * 2 + 1, across, 1);
     }
     positions.needsUpdate = true;
+    uvs.needsUpdate = true;
     this.bridgeGeometry.computeVertexNormals();
     this.bridgeGeometry.computeBoundingSphere();
   }
+}
 
-  private createDisplayTexture(): CanvasTexture {
-    const width = 64;
-    const height = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('2D canvas is unavailable for the display gradient');
-
-    const base = context.createLinearGradient(0, 0, 0, height);
-    base.addColorStop(0, '#101a29');
-    base.addColorStop(0.38, '#060b13');
-    base.addColorStop(1, '#020306');
-    context.fillStyle = base;
-    context.fillRect(0, 0, width, height);
-
-    const sheen = context.createRadialGradient(
-      width * 0.32,
-      height * 0.06,
-      0,
-      width * 0.32,
-      height * 0.06,
-      height * 0.7,
-    );
-    sheen.addColorStop(0, 'rgba(176, 196, 236, 0.1)');
-    sheen.addColorStop(0.45, 'rgba(96, 116, 162, 0.025)');
-    sheen.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    context.globalCompositeOperation = 'screen';
-    context.fillStyle = sheen;
-    context.fillRect(0, 0, width, height);
-    context.globalCompositeOperation = 'source-over';
-
-    const texture = new CanvasTexture(canvas);
-    texture.colorSpace = SRGBColorSpace;
-    texture.anisotropy = 4;
-    texture.needsUpdate = true;
-    this.textures.push(texture);
-    return texture;
+/** Flip the texture horizontally for a panel viewed from its rear face. */
+function mirrorUvs(geometry: BufferGeometry): void {
+  const uv = geometry.getAttribute('uv');
+  if (!uv) return;
+  for (let index = 0; index < uv.count; index += 1) {
+    uv.setX(index, 1 - uv.getX(index));
   }
+  uv.needsUpdate = true;
 }
 
 /**
