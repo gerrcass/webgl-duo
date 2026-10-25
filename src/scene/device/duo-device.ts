@@ -555,10 +555,10 @@ export class DuoDevice implements DuoDeviceModel {
     bezel.castShadow = false;
     bezel.receiveShadow = false;
 
-    layers['chassis-hinge']!.add(rail, shell, bezel);
+    layers['chassis-hinge']!.add(rail, shell, bezel, front);
     layers['rear-glass']!.add(rear);
     layers['inner-display']!.add(panel);
-    layers['cover-glass']!.add(front, innerGlass);
+    layers['cover-glass']!.add(innerGlass);
 
     const battery = new Mesh(parts.battery, this.materialsByName.cavity);
     battery.name = 'battery-cell';

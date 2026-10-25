@@ -279,7 +279,6 @@ export function boot(): void {
         top = Math.min(top, stageBox.bottom - 18);
         previous = top;
         const onLeft = columns[0] === column;
-        const width = node.offsetWidth || 150;
         node.style.left = `${stageBox.left + 12}px`;
         node.style.top = `${top}px`;
         node.style.setProperty('--leader', onLeft ? 'right' : 'left');
