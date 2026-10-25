@@ -33,8 +33,28 @@ export function heroMeta(): string {
   ].join(' · ');
 }
 
-export function stageCaption(): string {
-  return `Fig. 01 — Open envelope · ${formatMillimetres(reference.envelope.openWidth)} × ${formatMillimetres(reference.envelope.height)} × ${formatMillimetres(reference.envelope.bodyDepth)} mm`;
+export function stageCaption(foldAngle = 0): string {
+  if (foldAngle >= reference.hinge.maxFoldAngleDegrees) {
+    return `Fig. 01 — Closed · ${formatMillimetres(reference.envelope.closedWidth)} × ${formatMillimetres(reference.envelope.height)} × ${formatMillimetres(reference.envelope.closedBodyDepth)} mm`;
+  }
+  if (foldAngle === reference.hinge.presentationAngleDegrees) {
+    return `Fig. 01 — Presentation ${foldAngle}° · ${formatMillimetres(reference.envelope.openWidth)} × ${formatMillimetres(reference.envelope.height)} mm`;
+  }
+  if (foldAngle <= 0) {
+    return `Fig. 01 — Open envelope · ${formatMillimetres(reference.envelope.openWidth)} × ${formatMillimetres(reference.envelope.height)} × ${formatMillimetres(reference.envelope.bodyDepth)} mm`;
+  }
+  return `Fig. 01 — Fold ${foldAngle}° · hinge at ${formatMillimetres(reference.hinge.spineDiameter / 2)} mm`;
+}
+
+/** Accessible value text for the fold slider. */
+export function describeFold(foldAngle: number): string {
+  const rounded = Math.round(foldAngle);
+  if (rounded === 0) return '0 degrees, flat and open';
+  if (rounded === reference.hinge.presentationAngleDegrees) {
+    return `${rounded} degrees, presentation angle`;
+  }
+  if (rounded === reference.hinge.maxFoldAngleDegrees) return '180 degrees, fully closed';
+  return `${rounded} degrees closed`;
 }
 
 export function specRows(): readonly SpecRow[] {

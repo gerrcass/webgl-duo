@@ -19,7 +19,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { reference } from '../domain/reference';
 import { resolvePixelRatio, type QualityTier } from '../domain/quality';
 import type { DuoState } from '../domain/store';
-import { PlaceholderDevice } from './device/placeholder-device';
+import { DuoDevice } from './device/duo-device';
 import type { DuoDeviceModel } from './device/device-model';
 import { createStudioEnvironment, type StudioEnvironment } from './environment';
 import { HERO_FOV_DEGREES, computeHeroFraming } from './framing';
@@ -65,7 +65,7 @@ export class StudioScene {
     this.renderer = renderer;
     this.quality = quality;
     this.motionEnabled = options.motionEnabled;
-    this.device = options.device ?? new PlaceholderDevice();
+    this.device = options.device ?? new DuoDevice();
 
     this.camera = new PerspectiveCamera(
       HERO_FOV_DEGREES,

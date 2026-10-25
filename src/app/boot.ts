@@ -1,7 +1,9 @@
 import { readLaunchOptions } from '../env';
+import { reference } from '../domain/reference';
 import { createDuoApp, type DuoAppSnapshot } from './duo-app';
 import {
   DISCLAIMER,
+  describeFold,
   fallbackNote,
   heroMeta,
   specRows,
@@ -49,10 +51,14 @@ export function boot(): void {
   const fallbackNoteElement = requireElement<HTMLElement>('[data-ref="fallback-note"]');
   const liveStatus = requireElement<HTMLElement>('#live-status');
   const nav = requireElement<HTMLElement>('[data-ref="nav"]');
+  const foldSlider = requireElement<HTMLInputElement>('[data-ref="fold-slider"]');
+  const foldOutput = requireElement<HTMLOutputElement>('[data-ref="fold-output"]');
+  const stageCaptionElement = requireElement<HTMLElement>('[data-ref="stage-caption"]');
 
   requireElement<HTMLElement>('[data-ref="hero-meta"]').textContent = heroMeta();
-  requireElement<HTMLElement>('[data-ref="stage-caption"]').textContent =
-    stageCaption();
+  stageCaptionElement.textContent = stageCaption(
+    reference.hinge.presentationAngleDegrees,
+  );
   requireElement<HTMLElement>('[data-ref="disclaimer"]').textContent = DISCLAIMER;
   renderSpecRows(requireElement<HTMLElement>('[data-ref="specs"]'));
 
@@ -92,7 +98,28 @@ export function boot(): void {
       'The interactive 3D studio is unavailable. The designed poster and specifications are shown instead.';
   };
 
+  const syncFoldControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    const degrees = Math.round(snapshot.foldAngle);
+    foldSlider.value = String(degrees);
+    foldSlider.setAttribute('aria-valuetext', describeFold(degrees));
+    foldOutput.textContent = `${degrees}°`;
+    stageCaptionElement.textContent = stageCaption(degrees);
+  };
+
+  const snapToDetent = (value: number): number => {
+    for (const detent of reference.hinge.detentsDegrees) {
+      if (Math.abs(value - detent) <= 2) return detent;
+    }
+    return value;
+  };
+
+  foldSlider.addEventListener('input', () => {
+    const value = snapToDetent(Number(foldSlider.value));
+    app.setFoldAngle(value);
+  });
+
   const update = (snapshot: Readonly<DuoAppSnapshot>): void => {
+    syncFoldControl(snapshot);
     if (snapshot.status === 'fallback') {
       showFallback(snapshot);
       return;
@@ -111,6 +138,7 @@ export function boot(): void {
   };
 
   app.subscribe(update);
+  syncFoldControl(app.getState());
 
   try {
     app.mount(stage);

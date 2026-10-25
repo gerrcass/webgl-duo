@@ -7,6 +7,7 @@
  */
 
 import { reference, type ColourwayId } from './reference';
+import { clampFoldAngle } from './kinematics';
 import {
   DEFAULT_QUALITY,
   type QualityTierId,
@@ -24,13 +25,9 @@ export interface DuoState {
   readonly quality: QualityTierId;
 }
 
-/**
- * The foundation placeholder renders the open envelope, so the initial angle is
- * 0°. Once the hinge rig lands the default becomes the 158° presentation angle
- * from the sheet (`reference.hinge.presentationAngleDegrees`).
- */
+/** The hero opens at the sheet's 158° presentation angle. */
 export const INITIAL_DUO_STATE: DuoState = Object.freeze({
-  foldAngle: 0,
+  foldAngle: reference.hinge.presentationAngleDegrees,
   colourway: reference.identity.defaultColourway,
   preset: 'hero',
   exploded: false,
@@ -47,10 +44,7 @@ export type DuoAction =
 export const MIN_FOLD_ANGLE = 0;
 export const MAX_FOLD_ANGLE = reference.hinge.maxFoldAngleDegrees;
 
-export function clampFoldAngle(degrees: number): number {
-  if (!Number.isFinite(degrees)) return MIN_FOLD_ANGLE;
-  return Math.min(MAX_FOLD_ANGLE, Math.max(MIN_FOLD_ANGLE, degrees));
-}
+export { clampFoldAngle };
 
 export function reduceDuoState(state: DuoState, action: DuoAction): DuoState {
   switch (action.type) {
