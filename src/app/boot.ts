@@ -77,6 +77,8 @@ export function boot(): void {
   const presetRow = requireElement<HTMLElement>('[data-ref="preset-row"]');
   const explodedButton = requireElement<HTMLButtonElement>('[data-ref="exploded"]');
   const explodeLabels = requireElement<HTMLElement>('[data-ref="explode-labels"]');
+  const explodeLeaders = requireElement<SVGSVGElement>('[data-ref="explode-leaders"]');
+  const SVG_NS = 'http://www.w3.org/2000/svg';
 
   requireElement<HTMLElement>('[data-ref="hero-meta"]').textContent = heroMeta();
   stageCaptionElement.textContent = stageCaption(
@@ -155,22 +157,47 @@ export function boot(): void {
     'camera-module': { name: 'Camera module', detail: '48 MP · 57 mm plateau' },
   };
   const labelNodes = new Map<ExplodeLayerId, HTMLElement>();
+  const explodeHead = document.createElement('div');
+  explodeHead.className = 'explode-labels__head';
+  const explodeKicker = document.createElement('span');
+  explodeKicker.className = 'eyebrow';
+  explodeKicker.textContent = 'Construction';
+  const explodeTitle = document.createElement('strong');
+  explodeTitle.textContent = 'Six layers, one object.';
+  explodeHead.append(explodeKicker, explodeTitle);
   explodeLabels.append(
-    ...EXPLODE_LAYER_IDS.map((id) => {
+    explodeHead,
+    ...EXPLODE_LAYER_IDS.map((id, index) => {
       const item = document.createElement('div');
       item.className = 'explode-label';
       item.dataset.layer = id;
+      const number = document.createElement('span');
+      number.className = 'explode-label__index';
+      number.textContent = String(index + 1).padStart(2, '0');
       const name = document.createElement('span');
       name.className = 'explode-label__name';
       name.textContent = LABEL_COPY[id].name;
       const detail = document.createElement('span');
       detail.className = 'explode-label__detail';
       detail.textContent = LABEL_COPY[id].detail;
-      item.append(name, detail);
+      item.append(number, name, detail);
       labelNodes.set(id, item);
       return item;
     }),
   );
+  const leaderPaths = new Map<ExplodeLayerId, SVGPathElement>();
+  const leaderDots = new Map<ExplodeLayerId, SVGCircleElement>();
+  for (const id of EXPLODE_LAYER_IDS) {
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('class', 'explode-leader');
+    explodeLeaders.append(path);
+    leaderPaths.set(id, path);
+    const dot = document.createElementNS(SVG_NS, 'circle');
+    dot.setAttribute('class', 'explode-leader__dot');
+    dot.setAttribute('r', '2.4');
+    explodeLeaders.append(dot);
+    leaderDots.set(id, dot);
+  }
 
   let app: DuoApp | null = null;
   let unsubscribe: (() => void) | null = null;
@@ -260,40 +287,64 @@ export function boot(): void {
 
   const positionExplodeLabels = (): void => {
     if (!app) return;
-    const anchors = app.getLayerAnchors();
     const stageBox = stage.getBoundingClientRect();
-    const columns: Array<Array<{ id: ExplodeLayerId; y: number }>> = [[], []];
-    for (const [index, id] of EXPLODE_LAYER_IDS.entries()) {
-      const anchor = anchors.find((candidate) => candidate.id === id);
-      if (!anchor) continue;
-      columns[index < 3 ? 0 : 1]!.push({ id, y: anchor.y });
-    }
-    for (const column of columns) {
-      column.sort((a, b) => a.y - b.y);
-      let previous = Number.NEGATIVE_INFINITY;
-      for (const item of column) {
-        const node = labelNodes.get(item.id);
+    const anchors = app.getLayerAnchors();
+    const compact = stageBox.width < 860;
+    if (compact) {
+      // The narrow layout is a static two-column sheet above the controls.
+      explodeLeaders.style.display = 'none';
+      for (const id of EXPLODE_LAYER_IDS) {
+        const node = labelNodes.get(id);
         if (!node) continue;
-        let top = stageBox.top + 18 + item.y * (stageBox.height - 36);
-        top = Math.max(top, previous + 44);
-        top = Math.min(top, stageBox.bottom - 18);
-        previous = top;
-        const onLeft = columns[0] === column;
-        node.style.left = `${stageBox.left + 12}px`;
-        node.style.top = `${top}px`;
-        node.style.setProperty('--leader', onLeft ? 'right' : 'left');
+        node.style.removeProperty('left');
+        node.style.removeProperty('top');
       }
+      return;
     }
-    // Pin the columns to the stage's outer margins, not to the layer's x, so
-    // callouts never sit on top of the device.
-    for (const [index, id] of EXPLODE_LAYER_IDS.entries()) {
+    explodeLeaders.style.display = 'block';
+    explodeLeaders.setAttribute('viewBox', `0 0 ${stageBox.width} ${stageBox.height}`);
+    explodeLeaders.setAttribute('width', String(stageBox.width));
+    explodeLeaders.setAttribute('height', String(stageBox.height));
+    // Desktop is a single callout column on the left; the exploded stack is
+    // art-directed to the right. The order follows the projected layer centres
+    // so the callouts still read bottom-to-top with the geometry.
+    const ordered = [...EXPLODE_LAYER_IDS].sort((a, b) => {
+      const anchorA = anchors.find((candidate) => candidate.id === a);
+      const anchorB = anchors.find((candidate) => candidate.id === b);
+      return (anchorA?.y ?? 0) - (anchorB?.y ?? 0);
+    });
+    const top = stageBox.top + stageBox.height * 0.225;
+    const step = Math.min(43, stageBox.height * 0.05);
+    const left = stageBox.left + Math.max(24, stageBox.width * 0.052);
+    ordered.forEach((id, index) => {
       const node = labelNodes.get(id);
-      if (!node) continue;
-      const width = node.offsetWidth || 150;
-      node.style.left =
-        index < 3
-          ? `${stageBox.left + 16}px`
-          : `${stageBox.right - 16 - width}px`;
+      if (!node) return;
+      node.style.left = `${left}px`;
+      node.style.top = `${top + index * step}px`;
+    });
+
+    // Draw an elbow leader from each callout to its projected layer centre.
+    for (const id of EXPLODE_LAYER_IDS) {
+      const node = labelNodes.get(id);
+      const anchor = anchors.find((candidate) => candidate.id === id);
+      const path = leaderPaths.get(id);
+      const dot = leaderDots.get(id);
+      if (!node || !anchor || !path || !dot) continue;
+      if (!anchor.visible) {
+        path.style.display = 'none';
+        dot.style.display = 'none';
+        continue;
+      }
+      const rect = node.getBoundingClientRect();
+      const x1 = rect.right - stageBox.left + 4;
+      const y1 = rect.top - stageBox.top + rect.height / 2;
+      // Short technical stubs point at the assembly without crossing the
+      // control column; the six numbered callouts carry the mapping.
+      path.style.display = 'block';
+      dot.style.display = 'block';
+      path.setAttribute('d', `M ${x1} ${y1} H ${x1 + 26}`);
+      dot.setAttribute('cx', String(x1 + 26));
+      dot.setAttribute('cy', String(y1));
     }
   };
 
@@ -315,11 +366,24 @@ export function boot(): void {
     for (const [preset, button] of presetButtons) {
       button.setAttribute('aria-pressed', String(preset === snapshot.preset));
     }
+    document.body.dataset.preset = snapshot.preset;
+    if (!snapshot.exploded) {
+      stageCaptionElement.textContent =
+        snapshot.preset === 'profile'
+          ? 'FIG. 02 — PROFILE · 5.20 MM BODY · DUSK TITANIUM'
+          : snapshot.preset === 'detail'
+            ? 'FIG. 03 — HINGE SPINE · 148 MM · 0.20 MM SEAM'
+            : stageCaption(snapshot.foldAngle);
+    }
   };
 
   const syncExplodedControl = (snapshot: Readonly<DuoAppSnapshot>): void => {
     explodedButton.setAttribute('aria-pressed', String(snapshot.exploded));
     explodeLabels.hidden = !snapshot.exploded;
+    document.body.dataset.exploded = String(snapshot.exploded);
+    stageCaptionElement.textContent = snapshot.exploded
+      ? 'FIG. 02 — EXPLODED ASSEMBLY · SIX LAYERS · 1:1'
+      : stageCaption(snapshot.foldAngle);
     if (snapshot.exploded) {
       startLabelLoop();
     } else {

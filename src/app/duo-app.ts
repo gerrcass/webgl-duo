@@ -13,7 +13,7 @@ import {
 import type { ExplodeLayerId } from '../domain/kinematics';
 import { createStudioRenderer, isWebGL2Available } from '../scene/renderer';
 import { StudioScene } from '../scene/studio';
-import type { WebGLRenderer } from 'three';
+import { Raycaster, Vector2, type WebGLRenderer } from 'three';
 
 export type AppStatus = 'idle' | 'ready' | 'fallback' | 'disposed';
 
@@ -272,6 +272,17 @@ export function createDuoApp(options: DuoAppOptions = {}): DuoApp {
       }
 
       status = 'ready';
+      (window as unknown as { __duoStudio?: unknown }).__duoStudio = studio;
+      (window as unknown as { __duoPick?: unknown }).__duoPick = (x: number, y: number) => {
+        const ray = new Raycaster();
+        ray.setFromCamera(new Vector2(x, y), studio!.camera);
+        return ray.intersectObjects(studio!.scene.children, true).slice(0, 8).map((hit) => ({
+          name: hit.object.name,
+          parent: hit.object.parent?.name ?? null,
+          distance: Number(hit.distance.toFixed(3)),
+          point: hit.point.toArray().map((value) => Number(value.toFixed(3))),
+        }));
+      };
       document.addEventListener('visibilitychange', handleVisibility);
       newCanvas.addEventListener('webglcontextlost', handleContextLost);
 

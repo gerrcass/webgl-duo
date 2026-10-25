@@ -133,14 +133,17 @@ export const reference = {
   /** §4 Frame and surfaces */
   frame: {
     rail: {
-      roughness: ratio(0.5),
-      clearcoat: ratio(0.015),
-      anisotropy: ratio(0.3),
+      // A brushed titanium rail should hold a broad, soft highlight. A tighter
+      // lobe turns the 0.55 mm round-over into a sub-pixel white wire that
+      // sparkles at every silhouette even with 4× MSAA.
+      roughness: ratio(0.7),
+      clearcoat: ratio(0.01),
+      anisotropy: ratio(0.26),
       /** Brushing runs along the long (Y) axis, so the highlight is rotated 90°. */
       anisotropyRotationDegrees: 90,
-      metalness: ratio(0.92),
-      envMapIntensity: 0.3,
-      brushedRoughnessContrast: ratio(0.12),
+      metalness: ratio(0.9),
+      envMapIntensity: 0.24,
+      brushedRoughnessContrast: ratio(0.025),
       /** Art direction: a darker brushed finish, not a chrome outline. */
       tintGain: ratio(0.65),
     },
@@ -241,9 +244,9 @@ export const reference = {
     creaseStrengthFlat: ratio(0.035),
     creaseStrengthFolded: ratio(0.1),
     /** The cover glass is a separate transparent plate over each display. */
-    glassOpacity: ratio(0.03),
-    glassClearcoatRoughness: ratio(0.06),
-    glassEnvMapIntensity: ratio(0.16),
+    glassOpacity: ratio(0.018),
+    glassClearcoatRoughness: ratio(0.11),
+    glassEnvMapIntensity: ratio(0.09),
     /** Construction: keep the panel a hair proud of its rail to avoid z-fighting. */
     surfaceClearance: mm(0.1),
     /** Construction: inner cover-glass surface sits this far in front of the panel. */

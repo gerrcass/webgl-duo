@@ -77,9 +77,6 @@ export function createDeviceMaterials(palette: Colourway): DeviceMaterials {
     roughness: reference.frame.rail.roughness,
     clearcoat: reference.frame.rail.clearcoat,
     clearcoatRoughness: 0.18,
-    anisotropy: reference.frame.rail.anisotropy,
-    anisotropyRotation: (reference.frame.rail.anisotropyRotationDegrees * Math.PI) / 180,
-    roughnessMap: maps.brushed,
     envMapIntensity: reference.frame.rail.envMapIntensity,
   });
   rail.name = 'titanium-rail';

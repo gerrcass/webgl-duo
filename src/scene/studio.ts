@@ -121,7 +121,7 @@ export class StudioScene {
 
     this.environment = createStudioEnvironment(renderer);
     this.scene.environment = this.environment.texture;
-    this.scene.environmentIntensity = 0.4;
+    this.scene.environmentIntensity = 0.32;
 
     this.sweep = this.createSweep();
     this.scene.add(this.sweep);
@@ -171,11 +171,14 @@ export class StudioScene {
     this.device.setFoldAngle(state.exploded ? 180 : state.foldAngle);
     this.device.setColourway(state.colourway);
     this.device.setExploded(state.exploded, !this.motionEnabled || this.evidence);
+    // The exploded diagram is an orthographic-looking technical view; remove
+    // the art-directed lean so the six plates read as a clean stack.
+    this.device.object.rotation.x = state.exploded ? 0 : -PRODUCT_TILT_RADIANS;
     // Rear evidence view: when the device is closed the cover display already
     // faces the hero camera, so rotating the whole rig would show the plain
     // half instead. When open, the rear view shows both outer faces.
     this.device.object.rotation.y =
-      this.rearView && state.foldAngle > 1 ? Math.PI : 0;
+      this.rearView && state.foldAngle > 1 && !state.exploded ? Math.PI : 0;
   }
 
   setViewport(width: number, height: number): void {
@@ -288,19 +291,22 @@ export class StudioScene {
   /** Exploded diagram: open flat and a low, near-side view that fans the layers. */
   private computeExplodedFraming(): ReturnType<typeof computeHeroFraming> {
     const halfFovTan = Math.tan((HERO_FOV_DEGREES * Math.PI) / 360);
-    const distance = 1.15;
+    const distance = 1.12;
     const visibleHeight = 2 * distance * halfFovTan;
     const aspect = this.viewportWidth / this.viewportHeight;
+    const portrait = aspect < 0.95;
     return {
       aspect,
       fovDegrees: HERO_FOV_DEGREES,
       distance,
-      azimuthRadians: 0.62,
-      elevationRadians: 0.15,
+      azimuthRadians: 0.86,
+      elevationRadians: 0.12,
       target: {
-        x: this.viewportWidth > 800 ? 0.03 : 0,
+        // The exploded stack lives to the right of the callout column on
+        // desktop; on portrait it centres because the labels become a sheet.
+        x: portrait ? 0 : -0.15,
         y: reference.envelope.height / 2,
-        z: -0.012,
+        z: -0.018,
       },
       visibleWidth: visibleHeight * aspect,
       visibleHeight,
@@ -567,7 +573,7 @@ export class StudioScene {
 
     const key = new SpotLight(
       new Color(reference.studio.key.color),
-      30,
+      24,
       7,
       0.5,
       1,
@@ -603,7 +609,7 @@ export class StudioScene {
 
     const keyArea = new RectAreaLight(
       new Color(reference.studio.key.color),
-      2.3,
+      1.45,
       reference.studio.key.width,
       reference.studio.key.height,
     );
@@ -613,7 +619,7 @@ export class StudioScene {
 
     const fillArea = new RectAreaLight(
       new Color(reference.studio.fill.color),
-      0.9,
+      0.55,
       reference.studio.fill.width,
       reference.studio.fill.height,
     );
@@ -623,7 +629,7 @@ export class StudioScene {
 
     const scrim = new RectAreaLight(
       new Color(0xdbe5ff),
-      1.3,
+      0.7,
       1.6,
       1,
     );

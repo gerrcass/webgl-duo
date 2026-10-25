@@ -61,12 +61,11 @@ const COMPOSITION = {
   /** Profile is a side silhouette: nearly edge-on, camera slightly below eye. */
   profileAzimuthRadians: 1.2,
   profileElevationRadians: 0.045,
-  /** Detail is a macro on the camera plateau and the top rail. */
-  detailAzimuthRadians: 2.55,
-  detailElevationRadians: 0.24,
-  detailDistance: 0.3,
-  /** The plateau's approximate world centre at the presentation fold. */
-  detailTarget: { x: 0.034, y: 0.117, z: -0.012 },
+  /** Detail is a macro on the hinge spine, seam and adjacent rails. */
+  detailAzimuthRadians: 0.68,
+  detailElevationRadians: 0.18,
+  detailDistance: 0.46,
+  detailTarget: { x: 0.0, y: 0.076, z: 0.004 },
   /** Below this aspect the layout is stacked and the framing becomes portrait. */
   portraitAspectThreshold: 0.95,
 } as const;
@@ -108,7 +107,7 @@ export function computeHeroFraming(
   const fitWidthDistance =
     projectedWidth / (2 * desktopHalfWidthFraction) / (2 * halfFovTan * aspect);
   const fitHeightDistance =
-    projectedHeight / 0.76 / (2 * halfFovTan);
+    projectedHeight / 0.66 / (2 * halfFovTan);
 
   const portraitRequiredWidth = projectedWidth / COMPOSITION.portraitWidthFill;
   const portraitFitWidth = portraitRequiredWidth / (2 * halfFovTan * aspect);

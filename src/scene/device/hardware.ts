@@ -91,9 +91,17 @@ function buildCamera(
     group.add(lensGroup);
   }
 
-  group.add(buildFlash(flash, materials, track));
-  group.add(buildLidar(lidar, materials, track, textures));
-  group.add(buildCameraMicrophone(microphone, materials, track));
+  // `hardwareLayout` stores absolute device coordinates. The cluster group is
+  // already at the plateau centre, so every child must be placed relative to
+  // it or it is translated twice and floats off the back of the phone.
+  const relative = <T extends { x: number; y: number }>(part: T): T => ({
+    ...part,
+    x: part.x - centre.x,
+    y: part.y - centre.y,
+  });
+  group.add(buildFlash(relative(flash), materials, track));
+  group.add(buildLidar(relative(lidar), materials, track, textures));
+  group.add(buildCameraMicrophone(relative(microphone), materials, track));
   parent.add(group);
 }
 

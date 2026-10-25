@@ -3,12 +3,14 @@ import {
   Box3,
   BufferGeometry,
   CanvasTexture,
+  DoubleSide,
   DynamicDrawUsage,
   ExtrudeGeometry,
   Float32BufferAttribute,
   Group,
   Mesh,
   MeshPhysicalMaterial,
+  PlaneGeometry,
   Vector3,
   type Texture,
 } from 'three';
@@ -150,6 +152,7 @@ export class DuoDevice implements DuoDeviceModel {
   private readonly leftHalf = new Group();
   private readonly rightHalf = new Group();
   private readonly bridge: Mesh<BufferGeometry, MeshPhysicalMaterial>;
+  private readonly seamGroup = new Group();
   private readonly bridgeMaterial: MeshPhysicalMaterial;
   private readonly bridgeGeometry: BufferGeometry;
   private readonly bridgePositions: Float32BufferAttribute;
@@ -224,7 +227,11 @@ export class DuoDevice implements DuoDeviceModel {
       glassInset: reference.body.glassInset,
       roundOver: reference.body.railRoundOver,
       chamfer: reference.body.railChamfer,
-      cornerSegments: OUTLINE_SEGMENTS,
+      // The rail's specular bevel is only 0.55 mm wide. Twenty segments leave
+      // visible facets that read as a dashed white outline at 2× DPR; 72 keeps
+      // the highlight continuous around the corner.
+      cornerSegments: 72,
+      roundOverSegments: 5,
     });
     this.geometries.push(railGeometry);
     railGeometry.translate(RIGHT_BODY_CENTRE_X, BODY_CENTRE_Y, 0);
@@ -388,7 +395,30 @@ export class DuoDevice implements DuoDeviceModel {
     this.leftHalf.name = 'left-half';
     this.rightHalf.name = 'right-half';
     this.object.name = 'iphone-duo';
-    this.object.add(this.leftHalf, this.rightHalf, this.bridge, seam, hardware.hinge);
+    // The two display-glass plates meet the bridge on a hairline edge that
+    // catches the key light as a white dotted wire. A dark, matte crease strip
+    // covers the joint and reads as the fold's optical seam.
+    this.seamGroup.name = 'display-crease';
+    const creaseMaterial = new MeshPhysicalMaterial({
+      color: 0x03050a,
+      metalness: 0,
+      roughness: 0.62,
+      transparent: true,
+      opacity: 0.82,
+      depthWrite: false,
+      side: DoubleSide,
+    });
+    this.materials.push(creaseMaterial);
+    for (const side of [-1, 1] as const) {
+      const creaseGeometry = new PlaneGeometry(0.0014, DISPLAY_HEIGHT);
+      this.geometries.push(creaseGeometry);
+      const crease = new Mesh(creaseGeometry, creaseMaterial);
+      crease.name = side < 0 ? 'crease-left' : 'crease-right';
+      crease.position.set(side * (BRIDGE_WIDTH / 2 - 0.0002), BODY_CENTRE_Y, INNER_GLASS_Z + 0.00004);
+      crease.renderOrder = 3;
+      this.seamGroup.add(crease);
+    }
+    this.object.add(this.leftHalf, this.rightHalf, this.bridge, this.seamGroup, seam, hardware.hinge);
 
     this.setColourway(colourway);
     this.setFoldAngle(reference.hinge.presentationAngleDegrees);
@@ -454,6 +484,7 @@ export class DuoDevice implements DuoDeviceModel {
     // The bridge is authored in the device frame; shifting it with the inner
     // display keeps both ends welded to their panels through the whole travel.
     this.bridge.position.z = offsets[1]!.z;
+    this.seamGroup.position.z = offsets[1]!.z;
   }
 
   dispose(): void {

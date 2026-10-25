@@ -1712,3 +1712,155 @@ body[data-motion="off"] .scroll-cue__line::after {
     display: none;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Final art direction: exploded inspection mode                               */
+/* -------------------------------------------------------------------------- */
+
+body[data-exploded="true"] .hero__copy > .eyebrow,
+body[data-exploded="true"] .hero__title,
+body[data-exploded="true"] .hero__lede,
+body[data-exploded="true"] .hero__meta,
+body[data-exploded="true"] .scroll-cue {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body[data-exploded="true"] .hero__copy {
+  pointer-events: none;
+}
+
+body[data-exploded="true"] .hero__copy .console {
+  pointer-events: auto;
+}
+
+.explode-labels__head {
+  position: absolute;
+  left: clamp(1.5rem, 5.2vw, 5rem);
+  top: 10.5vh;
+  display: grid;
+  gap: 0.35rem;
+  max-width: 14rem;
+}
+
+.explode-labels__head .eyebrow {
+  color: var(--accent);
+}
+
+.explode-labels__head strong {
+  color: var(--ink);
+  font-size: 1.28rem;
+  font-weight: 300;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.explode-label {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  grid-template-areas:
+    "index name"
+    "index detail";
+  column-gap: 0.55rem;
+  row-gap: 0.12rem;
+  padding: 0.4rem 0.6rem 0.42rem 0.7rem;
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(7, 8, 10, 0.86), rgba(7, 8, 10, 0));
+  backdrop-filter: none;
+  white-space: nowrap;
+}
+
+.explode-label::after {
+  display: none;
+}
+
+.explode-label__index {
+  grid-area: index;
+  align-self: start;
+  margin-top: 0.06rem;
+  color: var(--accent);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+}
+
+.explode-label__name {
+  grid-area: name;
+}
+
+.explode-label__detail {
+  grid-area: detail;
+}
+
+@media (max-width: 860px) {
+  body[data-exploded="true"] .hero__title {
+    opacity: 0;
+  }
+
+  .explode-labels__head {
+    position: static;
+    grid-column: 1 / -1;
+    max-width: none;
+    padding: 0 0 0.4rem;
+  }
+
+  .explode-labels__head strong {
+    font-size: 1.1rem;
+  }
+
+  .explode-label {
+    padding: 0.35rem 0.45rem;
+    background: rgba(7, 8, 10, 0.86);
+    border-left-width: 1px;
+    white-space: normal;
+  }
+}
+
+body[data-exploded="true"] .hero__copy > * {
+  animation: none !important;
+}
+
+.explode-leaders {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.explode-leader {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 36%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.explode-leader__dot {
+  fill: var(--accent);
+  opacity: 0.55;
+}
+
+body[data-preset="detail"] .hero__copy > .eyebrow,
+body[data-preset="detail"] .hero__title,
+body[data-preset="detail"] .hero__lede,
+body[data-preset="detail"] .hero__meta,
+body[data-preset="detail"] .scroll-cue {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body[data-preset="detail"] .hero__copy > * {
+  animation: none !important;
+}
+
+body[data-preset="detail"] .hero__copy {
+  pointer-events: none;
+}
+
+body[data-preset="detail"] .hero__copy .console {
+  pointer-events: auto;
+}
