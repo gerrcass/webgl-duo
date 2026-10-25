@@ -1219,7 +1219,7 @@ body.is-ready .hero__copy > :nth-child(5) {
 
 @media (max-width: 860px) {
   :root {
-    --sheet-h: 11.75rem;
+    --sheet-h: 13rem;
   }
 
   /* The canvas ends above the control sheet, so the device is never framed
